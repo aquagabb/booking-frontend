@@ -300,5 +300,56 @@
     "marketing_emails_desc": "Primiți actualizări despre funcții noi și promoții",
     "notifications_update_success": "Preferințele de notificări au fost actualizate cu succes",
     "notifications_update_error": "Eroare la actualizarea preferințelor de notificări"
+  },
+  "features": {
+    "air_conditioning": "Aer condiționat",
+    "accessible_entrance": "Intrare accesibilă",
+    "wifi": "WiFi",
+    "soundproofing": "Izolare fonică",
+    "parking": "Parcare",
+    "outdoor_seating": "Locuri în aer liber",
+    "private_dining": "Sală privată",
+    "bar": "Bar",
+    "kitchen": "Bucătărie",
+    "restrooms": "Toalete"
+  },
+  "rules": {
+    "no_smoking_indoors": "Fumat interzis în interior",
+    "no_pets": "Animale de companie interzise",
+    "dress_code": "Cod vestimentar obligatoriu",
+    "age_restriction": "Restricție de vârstă",
+    "outside_food": "Mâncare din afară interzisă"
+  },
+  "highlights": {
+    "free_parking": "Parcare gratuită",
+    "private_parking": "Parcare privată",
+    "min_hours_booking": "Rezervare minimă pe ore",
+    "catering_services": "Servicii de catering",
+    "outdoor_area": "Zonă în aer liber"
+  },
+  "restaurant": {
+    "loading": "Se încarcă...",
+    "not_found": "Locația nu a fost găsită",
+    "add_to_favorites": "Adaugă la favorite",
+    "share_location": "Distribuie locația",
+    "reviews": "recenzii",
+    "view_on_google_maps": "Vezi pe Google Maps",
+    "about_this_place": "Despre această locație",
+    "show_more": "Arată mai mult",
+    "show_less": "Arată mai puțin",
+    "up_to_guests": "Până la {{count}} oaspeți",
+    "about_fallback": "Bine ați venit la {{name}}, situat la {{address}}. Bucurați-vă de o experiență culinară excepțională, cu o capacitate de până la {{maxGuests}} oaspeți.",
+    "seating_options": "Capacitate",
+    "up_to_people": "până la {{count}} persoane",
+    "facilities_features": "Facilități",
+    "space_rules": "Reguli spațiu",
+    "seating": {
+      "dining": "Perfect pentru evenimente formale și mese.",
+      "standing": "Ideal pentru petreceri cocktail și evenimente de networking.",
+      "theater": "Potrivit pentru prezentări și conferințe.",
+      "boardroom": "Configurat pentru întâlniri de afaceri cu o masă centrală.",
+      "classroom": "Pentru sesiuni de training cu rânduri de birouri și scaune.",
+      "default": "Aranjament flexibil al locurilor."
+    }
   }
 }

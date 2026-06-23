@@ -398,6 +398,31 @@
     "catering_services": "Catering Services",
     "outdoor_area": "Outdoor Area"
   },
+  "restaurant": {
+    "loading": "Loading...",
+    "not_found": "Restaurant not found",
+    "add_to_favorites": "Add to Favorites",
+    "share_location": "Share Location",
+    "reviews": "reviews",
+    "view_on_google_maps": "View on Google Maps",
+    "about_this_place": "About this place",
+    "show_more": "Show more",
+    "show_less": "Show less",
+    "up_to_guests": "Up to {{count}} guests",
+    "about_fallback": "Welcome to {{name}}, located at {{address}}. Experience exceptional dining with a capacity of up to {{maxGuests}} guests.",
+    "seating_options": "Seating Options",
+    "up_to_people": "up to {{count}} people",
+    "facilities_features": "Facilities & Features",
+    "space_rules": "Space Rules",
+    "seating": {
+      "dining": "Perfect for formal dining events and meals.",
+      "standing": "Ideal for cocktail parties and networking events.",
+      "theater": "Great for presentations and conferences.",
+      "boardroom": "Set up for business meetings with a central table.",
+      "classroom": "For training sessions with rows of desks and chairs.",
+      "default": "Flexible seating arrangement."
+    }
+  },
   "partner": {
     "hero_title": "Register your venue and manage your bookings effortlessly",
     "hero_subtitle": "Join a modern booking platform built to help venue owners save time, attract clients, and grow their business.",

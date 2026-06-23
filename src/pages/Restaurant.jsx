@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import RestaurantCard from '../components/RestaurantDetails';
 import ImageGallery from '../components/ImageGallery';
 import ReservationRight from '../components/ReservationRight';
@@ -8,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { useUserStore } from '../store/user.store';
 
 const Restaurant = () => {
+  const { t } = useTranslation();
   const { slug } = useParams();
   const navigate = useNavigate();
   const user = useUserStore((state) => state.user);
@@ -84,7 +86,7 @@ const Restaurant = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-lg">Loading...</div>
+        <div className="text-lg">{t('restaurant.loading')}</div>
       </div>
     );
   }
@@ -92,7 +94,7 @@ const Restaurant = () => {
   if (!location) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-lg text-red-500">Restaurant not found</div>
+        <div className="text-lg text-red-500">{t('restaurant.not_found')}</div>
       </div>
     );
   }
@@ -124,7 +126,7 @@ const Restaurant = () => {
               <button
                 onClick={handleToggleFavorite}
                 className="flex items-center gap-1 px-3 py-1 rounded-full hover:bg-gray-100 transition text-sm text-gray-700 border border-gray-300"
-                title="Add to Favorites"
+                title={t('restaurant.add_to_favorites')}
                 style={{ borderRadius: '50%', padding: '12px' }}
               >
                 <Heart
@@ -137,7 +139,7 @@ const Restaurant = () => {
             <button
               onClick={handleShare}
               className="flex items-center gap-1 px-3 py-1 rounded-full hover:bg-gray-100 transition text-sm text-gray-700 border border-gray-300"
-              title="Share Location"
+              title={t('restaurant.share_location')}
               style={{ borderRadius: '50%', padding: '12px' }}
             >
               {copied ? (
@@ -160,7 +162,7 @@ const Restaurant = () => {
           <div className="flex items-center gap-1 text-accent">
             <Star size={16} className="fill-current stroke-none" />
             <span>{location.rating || '0'}</span>
-            <span className="text-gray-400">({location.ratingCount || 0} reviews)</span>
+            <span className="text-gray-400">({location.ratingCount || 0} {t('restaurant.reviews')})</span>
           </div>
           {location.googleMapsUrl && (
             <>
@@ -171,7 +173,7 @@ const Restaurant = () => {
                 rel="noopener noreferrer"
                 className="text-blue-500 hover:underline"
               >
-                View on Google Maps
+                {t('restaurant.view_on_google_maps')}
               </a>
             </>
 
