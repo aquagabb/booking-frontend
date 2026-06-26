@@ -1,143 +1,145 @@
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
+import { navigateToInternalPath } from "../../lib/navigateInternal";
+import { useUserStore } from "../../store/user.store";
+import { login } from "../../api/users/users";
 import { Controller, useForm } from "react-hook-form";
 import CustomInput from "../../components/shared/CustomInput";
 import { useTranslation } from "react-i18next";
 import GoogleAuthButton from "../../components/shared/GoogleAuthButton";
-import { signup } from "../../api/users/users";
+import { useEffect, useState } from "react";
+import ActivationModal from "../../components/shared/Modals/ActivationModal";
 import FormErrorMessage from "../../components/shared/FormErrorMessage";
-import { useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { X, Eye, EyeOff } from "lucide-react";
 
-type FormValues = {
-  firstName: string;
-  lastName: string;
-  email: string;
-  password: string;
-  terms: boolean;
-  gdpr: boolean;
-};
-
-interface RegisterProps {
-  redirectPath?: string;
-}
-
-const Register = ({ redirectPath }: RegisterProps = {}) => {
+const Login = ({
+  isModal = false,
+  handleClose,
+  postLoginRedirect,
+}) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const setUser = useUserStore((state) => state.setUser);
+
+  const location = useLocation();
+  const { email, password, autoActivation, redirectPath: redirectPathFromState } = location.state || {};
+  const redirectAfterLogin =
+    isModal && postLoginRedirect
+      ? postLoginRedirect
+      : redirectPathFromState || postLoginRedirect || "/settings/overview";
+  const oauthReturnPath =
+    isModal && postLoginRedirect
+      ? postLoginRedirect
+      : redirectPathFromState || postLoginRedirect;
+
+  const [isModalActivation, setIsModalActivation] = useState(false);
+  const [emailForActivation, setEmailForActivation] = useState(null);
+  const [errorMsg, setErrorMsg] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     handleSubmit,
     control,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<FormValues>({
+  } = useForm({
     mode: "onChange",
     defaultValues: {
-      firstName: "",
-      lastName: "",
       email: "",
       password: "",
-      terms: true,
-      gdpr: true,
     },
   });
 
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
-
-  const onSubmit = async (data: FormValues) => {
+  const onSubmit = async (data) => {
     setErrorMsg(null);
 
     try {
-      const { status } = await signup({
-        firstName: data.firstName,
-        lastName: data.lastName,
+      const { status, response } = await login({
         email: data.email,
         password: data.password,
-        gdpr: true,
-        terms: true,
       });
 
-      if (status !== 201) {
-        setErrorMsg(t("auth.register_failed") || "Registration failed. Please try again.");
+      if (status === 404) {
+        if (response.checkEmail === true) {
+          setEmailForActivation(data.email);
+          setIsModalActivation(true);
+        }
+        setErrorMsg(t("auth.activation_required") || "Account not activated. Please verify your email.");
         return;
       }
 
-      reset();
-      navigate("/login", {
-        state: {
-          email: data.email,
-          password: data.password,
-          autoActivation: true,
-          redirectPath: redirectPath || undefined,
+      if (status !== 200) {
+        setErrorMsg(t("auth.login_failed") || "Invalid credentials. Please try again.");
+        return;
+      }
+
+      setUser({
+        id: response?.id,
+        name: response?.name,
+        email: response?.email,
+        phone: response?.phone,
+        role: response?.role,
+        token: response?.accessToken,
+        preferences: {
+          language: response?.language,
+          emailNotifications: response?.emailNotifications,
         },
       });
+
+      reset();
+      if (isModal && handleClose) handleClose();
+      navigateToInternalPath(navigate, redirectAfterLogin);
     } catch (error) {
       console.error(error);
       setErrorMsg(t("auth.something_wrong") || "Something went wrong. Please try again.");
     }
   };
 
+  useEffect(() => {
+    if (email) {
+      reset({
+        email,
+        password: password || "",
+      });
+    }
+
+    if (autoActivation && email) {
+      setEmailForActivation(email);
+      setIsModalActivation(true);
+    }
+  }, [autoActivation, email, password, reset]);
+
   return (
     <div className="flex items-center justify-center min-h-[80vh] px-4">
-      <div className="border border-gray-200 w-full max-w-[440px] p-2 rounded-sm">
+      <div className="bg-white  border border-gray-200 w-full max-w-[440px] p-2 rounded-sm">
         <div className="p-4">
+          {isModal && (
+            <div className="flex justify-end -mt-2 -mr-2 mb-2">
+              <button
+                onClick={handleClose}
+                className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-600"
+                aria-label="Close"
+                type="button"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          )}
+
           <h1 className="text-lg font-bold text-gray-800 leading-tight mb-1">
-          Create an account
+            {t("auth.sign_in_or_create")}
           </h1>
           <p className="text-base text-gray-600 mb-6 mt-4">
-            {t("auth.register_description")}
+            {t("auth.sign_in_description")}
           </p>
 
           <FormErrorMessage message={errorMsg} />
 
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            noValidate
-            className="space-y-4"
-            autoComplete="off"
-          >
-            <Controller
-              name="firstName"
-              control={control}
-              rules={{
-                required: t("auth.validation.firstName_required") as string,
-              }}
-              render={({ field }) => (
-                <CustomInput
-                  label={t("auth.first_name")}
-                  placeholder="Gabriel"
-                  type="text"
-                  value={field.value}
-                  onChange={field.onChange}
-                  error={errors.firstName?.message}
-                />
-              )}
-            />
-
-            <Controller
-              name="lastName"
-              control={control}
-              rules={{
-                required: t("auth.validation.lastName_required") as string,
-              }}
-              render={({ field }) => (
-                <CustomInput
-                  label={t("auth.last_name")}
-                  placeholder="Popescu"
-                  type="text"
-                  value={field.value}
-                  onChange={field.onChange}
-                  error={errors.lastName?.message}
-                />
-              )}
-            />
-
+          <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
             <Controller
               name="email"
               control={control}
               rules={{
-                required: t("auth.validation.email_required") as string,
+                required: t("auth.validation.email_required"),
                 pattern: {
                   value: /^\S+@\S+\.\S+$/,
                   message: t("auth.validation.email_invalid"),
@@ -159,11 +161,7 @@ const Register = ({ redirectPath }: RegisterProps = {}) => {
               name="password"
               control={control}
               rules={{
-                required: t("auth.validation.password_required") as string,
-                minLength: {
-                  value: 6,
-                  message: t("auth.validation.password_min_length"),
-                },
+                required: t("auth.validation.password_required"),
               }}
               render={({ field }) => (
                 <CustomInput
@@ -185,12 +183,21 @@ const Register = ({ redirectPath }: RegisterProps = {}) => {
               )}
             />
 
+            <div className="flex justify-end">
+              <Link
+                to="/forgot-password"
+                className="text-sm text-[#0061df] hover:underline font-medium"
+              >
+                {t("auth.forgot_password")}
+              </Link>
+            </div>
+
             <button
               type="submit"
               disabled={isSubmitting}
               className="btn-primary w-full"
             >
-              {isSubmitting ? t("auth.registering") : t("auth.register")}
+              {isSubmitting ? t("auth.logging_in") : t("auth.login")}
             </button>
           </form>
 
@@ -202,15 +209,15 @@ const Register = ({ redirectPath }: RegisterProps = {}) => {
 
           <div className="flex gap-3">
             <div className="flex-1 min-w-0 [&>button]:w-full [&>button]:h-12 [&>button]:rounded-lg [&>button]:flex [&>button]:items-center [&>button]:justify-center">
-              <GoogleAuthButton redirectPath={redirectPath} />
+              <GoogleAuthButton redirectPath={oauthReturnPath} />
             </div>
           </div>
 
           <div className="mt-8 text-center">
             <p className="text-sm text-gray-600">
-              {t("auth.has_account")}{" "}
-              <Link to="/login" className="text-[#0061df] font-medium hover:underline">
-                {t("auth.login")}
+              {t("auth.no_account")}{" "}
+              <Link to="/register" className="text-[#0061df] font-medium hover:underline">
+                {t("auth.register")}
               </Link>
             </p>
           </div>
@@ -231,8 +238,20 @@ const Register = ({ redirectPath }: RegisterProps = {}) => {
           {t("auth.all_rights_reserved")} © {new Date().getFullYear()}
         </p>
       </div>
+
+      <ActivationModal
+        isOpen={isModalActivation}
+        email={emailForActivation}
+        type="activation"
+        onClose={() => setIsModalActivation(false)}
+        onActivationSuccess={() => {
+          setIsModalActivation(false);
+          setErrorMsg(null);
+          handleSubmit(onSubmit)();
+        }}
+      />
     </div>
   );
 };
 
-export default Register;
+export default Login;
