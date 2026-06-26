@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 
 import ActivationModal from "../../../../components/shared/Modals/ActivationModal";
-import Login from "../../../Login";
+import Login from "../../../auth/Login";
 
 interface LoginModalProps {
   isOpen: boolean;

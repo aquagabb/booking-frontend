@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import { Controller } from 'react-hook-form'
 import { useLocation } from 'react-router-dom'
-import CustomInput from '../components/shared/CustomInput'
-import LoginModal from './protected/client/Reservations/LoginModal'
+import CustomInput from '../../components/shared/CustomInput'
+import LoginModal from '../protected/client/Reservations/LoginModal'
 
 type CheckoutContactProps = {
   // Containerul gestionează react-hook-form; aici folosim tip `any` ca să nu cuplăm direct la structura FormValues.

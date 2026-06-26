@@ -1,14 +1,14 @@
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { navigateToInternalPath } from "../lib/navigateInternal";
-import { useUserStore } from "../store/user.store";
-import { login } from "../api/users/users";
+import { navigateToInternalPath } from "../../lib/navigateInternal";
+import { useUserStore } from "../../store/user.store";
+import { login } from "../../api/users/users";
 import { Controller, useForm } from "react-hook-form";
-import CustomInput from "../components/shared/CustomInput";
+import CustomInput from "../../components/shared/CustomInput";
 import { useTranslation } from "react-i18next";
-import GoogleAuthButton from "../components/shared/GoogleAuthButton";
+import GoogleAuthButton from "../../components/shared/GoogleAuthButton";
 import { useEffect, useState } from "react";
-import ActivationModal from "../components/shared/Modals/ActivationModal";
-import FormErrorMessage from "../components/shared/FormErrorMessage";
+import ActivationModal from "../../components/shared/Modals/ActivationModal";
+import FormErrorMessage from "../../components/shared/FormErrorMessage";
 import { X, Eye, EyeOff } from "lucide-react";
 
 type FormValues = {

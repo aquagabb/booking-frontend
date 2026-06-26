@@ -1,10 +1,10 @@
 
-import Login from '../pages/Login';
-import Register from '../pages/Register';
+import Login from '../pages/auth/Login';
+import Register from '../pages/auth/Register';
 import Restaurants from '../pages/Restaurants';
 import Restaurant from '../pages/Restaurant';
-import CheckoutContainer from '../pages/CheckoutContainer';
-import CheckoutSuccess from '../pages/CheckoutSuccess';
+import Checkout from '../pages/checkout/Checkout';
+import CheckoutThankYou from '../pages/checkout/CheckoutThankYou';
 
 import Profile from '../pages/protected/Profile';
 
@@ -17,16 +17,15 @@ import Favorites from '../pages/protected/Favorites';
 import Notifications from '../pages/protected/Notifications';
 import Settings from '../pages/protected/Settings';
 import Subscriptions from '../pages/Subscriptions';
-import GoogleCallback from '../pages/GoogleCallback';
+import GoogleCallback from '../pages/auth/GoogleCallback';
 
 import AccountTabsPage from '../pages/protected/AccountTabs';
 import ReservationClient from '../pages/protected/client/Reservations/ReservationClient';
-import MessagesAdmin from '../pages/protected/MessagesAdmin';
 
-import PartnerRegister from '../pages/PartnerRegister';
+
 import PartnerBecomePage from '../pages/PartnerBecomePage';
 
-import NotificationsAdmin from '../pages/NotificationsAdmin';
+
 
 
 export type AppRoute = {
@@ -44,8 +43,8 @@ export const publicRoutes: AppRoute[] = [
   { path: '/join/register', element: <PartnerBecomePage /> },
   { path: '/restaurants', element: <Restaurants /> },
   { path: '/restaurants/:slug', element: <Restaurant /> },
-  { path: '/checkout/:slug', element: <CheckoutContainer /> },
-  { path: '/checkout/successful/:id/:code', element: <CheckoutSuccess /> },
+  { path: '/checkout/:slug', element: <Checkout /> },
+  { path: '/checkout/successful/:id/:code', element: <CheckoutThankYou /> },
   // { path: '/subscriptions', element: <Subscriptions /> },
   { path: '/auth/google/callback', element: <GoogleCallback /> },
 

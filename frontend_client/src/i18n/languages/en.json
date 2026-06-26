@@ -613,5 +613,13 @@
     "marketing_emails_desc": "Receive updates about new features and promotions",
     "notifications_update_success": "Notification preferences updated successfully",
     "notifications_update_error": "Failed to update notification preferences"
+  },
+  "checkout": {
+    "thank_you_title": "Thank you! Your reservation has been submitted",
+    "thank_you_pending": "Your reservation at {{venue}} is pending confirmation.",
+    "thank_you_confirmed": "Your reservation at {{venue}} has been confirmed.",
+    "thank_you_email_hint": "You will receive an email with your reservation details.",
+    "thank_you_view_details": "View reservation details",
+    "thank_you_back_to_search": "Back to search"
   }
 }

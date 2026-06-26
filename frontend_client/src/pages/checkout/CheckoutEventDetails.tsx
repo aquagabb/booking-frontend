@@ -1,11 +1,11 @@
 import React from 'react'
 import { Controller } from 'react-hook-form'
 import { Calendar, Clock } from 'lucide-react'
-import CustomSelect from '../components/shared/CustomSelect'
-import CustomRadioButton from '../components/shared/CustomRadioButton'
-import CustomDatePicker from '../components/shared/CustomDatePicker'
-import CustomTimePicker from '../components/shared/CustomTimePicker'
-import CustomInput from '../components/shared/CustomInput'
+import CustomSelect from '../../components/shared/CustomSelect'
+import CustomRadioButton from '../../components/shared/CustomRadioButton'
+import CustomDatePicker from '../../components/shared/CustomDatePicker'
+import CustomTimePicker from '../../components/shared/CustomTimePicker'
+import CustomInput from '../../components/shared/CustomInput'
 
 type SelectOption = { value: string | number; label: string }
 

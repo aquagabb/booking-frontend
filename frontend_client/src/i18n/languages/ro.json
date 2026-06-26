@@ -351,5 +351,13 @@
       "classroom": "Pentru sesiuni de training cu rânduri de birouri și scaune.",
       "default": "Aranjament flexibil al locurilor."
     }
+  },
+  "checkout": {
+    "thank_you_title": "Mulțumim! Rezervarea ta a fost înregistrată",
+    "thank_you_pending": "Rezervarea la {{venue}} a fost trimisă și așteaptă confirmare.",
+    "thank_you_confirmed": "Rezervarea la {{venue}} a fost confirmată cu succes.",
+    "thank_you_email_hint": "Vei primi un e-mail cu detaliile rezervării.",
+    "thank_you_view_details": "Vezi detalii rezervare",
+    "thank_you_back_to_search": "Înapoi la căutare"
   }
 }

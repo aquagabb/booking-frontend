@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import { MoreHorizontal } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -124,6 +123,8 @@ const Notifications: React.FC<NotificationsProps> = ({
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [filter, setFilter] = useState<NotificationFilter>("all");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const [scrollLoadEnabled, setScrollLoadEnabled] = useState(false);
   const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
   const {
@@ -195,6 +196,22 @@ const Notifications: React.FC<NotificationsProps> = ({
     [items]
   );
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+
+    if (menuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [menuOpen]);
+
   const filteredItems = useMemo(() => {
     if (filter === "unread") {
       return items.filter((n) => !n.isRead);
@@ -256,43 +273,38 @@ const Notifications: React.FC<NotificationsProps> = ({
           >
             <span>{t("notifications_page.title")}</span>
           </h3>
-          <Menu as="div" className="relative shrink-0">
-            <MenuButton
+          <div ref={menuRef} className="relative shrink-0">
+            <button
               type="button"
               aria-label={t("notifications_page.menu_aria")}
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((open) => !open)}
               className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
             >
               <MoreHorizontal className="h-5 w-5" strokeWidth={2} />
-            </MenuButton>
-            <MenuItems
-              anchor="bottom end"
-              transition
-              modal={false}
-              className={cn(
-                "z-50 mt-2 w-52 origin-top-right rounded-xl border border-slate-200 bg-white py-1",
-                "transition data-closed:scale-95 data-closed:opacity-0 data-enter:duration-100 data-leave:duration-75"
-              )}
-            >
-              <MenuItem disabled={!hasUnread || markingAllRead || syncing}>
-                {({ focus }) => (
-                  <button
-                    type="button"
-                    onClick={() => void markAllAsRead()}
-                    className={cn(
-                      "flex w-full px-4 py-2.5 text-left text-sm text-slate-800",
-                      focus && "bg-slate-50",
-                      (!hasUnread || markingAllRead || syncing) &&
-                        "cursor-not-allowed opacity-40"
-                    )}
-                  >
-                    {markingAllRead
-                      ? t("notifications_page.marking_all_read")
-                      : t("notifications_page.mark_all_read")}
-                  </button>
-                )}
-              </MenuItem>
-            </MenuItems>
-          </Menu>
+            </button>
+            {menuOpen && (
+              <div className="absolute right-0 top-full z-50 mt-2 w-52 origin-top-right rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+                <button
+                  type="button"
+                  disabled={!hasUnread || markingAllRead || syncing}
+                  onClick={() => {
+                    void markAllAsRead();
+                    setMenuOpen(false);
+                  }}
+                  className={cn(
+                    "flex w-full px-4 py-2.5 text-left text-sm text-slate-800 hover:bg-slate-50",
+                    (!hasUnread || markingAllRead || syncing) &&
+                      "cursor-not-allowed opacity-40"
+                  )}
+                >
+                  {markingAllRead
+                    ? t("notifications_page.marking_all_read")
+                    : t("notifications_page.mark_all_read")}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         <div

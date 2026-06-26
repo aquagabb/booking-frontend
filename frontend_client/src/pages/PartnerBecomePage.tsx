@@ -1,5 +1,5 @@
 import PartnerRegister from './PartnerRegister'
-import Register from './Register'
+import Register from './auth/Register'
 import { useUserStore } from '../store/user.store'
 import { Users, TrendingUp, Shield } from 'lucide-react'
 

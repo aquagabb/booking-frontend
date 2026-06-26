@@ -1,13 +1,13 @@
-import React from 'react';
-import CheckoutSummaryPreview from './CheckoutSummaryPreview';
+import React from 'react'
+import CheckoutSummaryPreview from './CheckoutSummaryPreview'
 
-type CheckoutStepsProps = {
-  location: any;
-  bookingSummary?: any;
-  restaurantSlug?: string;
-};
+type CheckoutSidebarProps = {
+  location: any
+  bookingSummary?: any
+  restaurantSlug?: string
+}
 
-const CheckoutSteps: React.FC<CheckoutStepsProps> = ({
+const CheckoutSidebar: React.FC<CheckoutSidebarProps> = ({
   location,
   bookingSummary,
   restaurantSlug,
@@ -20,7 +20,7 @@ const CheckoutSteps: React.FC<CheckoutStepsProps> = ({
         restaurantSlug={restaurantSlug}
       />
     </div>
-  );
-};
+  )
+}
 
-export default CheckoutSteps;
+export default CheckoutSidebar

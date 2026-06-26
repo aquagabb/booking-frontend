@@ -1,10 +1,10 @@
 import { useNavigate, Link } from "react-router-dom";
 import { Controller, useForm } from "react-hook-form";
-import CustomInput from "../components/shared/CustomInput";
+import CustomInput from "../../components/shared/CustomInput";
 import { useTranslation } from "react-i18next";
-import GoogleAuthButton from "../components/shared/GoogleAuthButton";
-import { signup } from "../api/users/users";
-import FormErrorMessage from "../components/shared/FormErrorMessage";
+import GoogleAuthButton from "../../components/shared/GoogleAuthButton";
+import { signup } from "../../api/users/users";
+import FormErrorMessage from "../../components/shared/FormErrorMessage";
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 

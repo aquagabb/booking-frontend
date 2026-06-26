@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { navigateToInternalPath } from "../lib/navigateInternal";
-import { googleAuthentication } from "../api/users/users";
+import { navigateToInternalPath } from "../../lib/navigateInternal";
+import { googleAuthentication } from "../../api/users/users";
 import { useTranslation } from "react-i18next";
-import { useUserStore } from "../store/user.store";
+import { useUserStore } from "../../store/user.store";
 
 type AuthStatus = "loading" | "success" | "error";
 
