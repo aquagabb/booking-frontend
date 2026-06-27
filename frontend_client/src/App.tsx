@@ -11,7 +11,7 @@ import ClientLayout from './layout/ClientLayout';
 import { ProtectedRoute } from './routes/ProtectedRoute';
 import Header from './layout/Header';
 import Footer from './layout/Footer';
-import NotFound from './pages/NotFound';
+import NotFound404 from './pages/static/NotFound404';
 
 function App() {
   return (
@@ -40,7 +40,7 @@ function App() {
 
 
         {/* Fallback */}
-        <Route path="*" element={<NotFound />} />
+        <Route path="*" element={<NotFound404 />} />
       </Routes>
 
       <Footer />

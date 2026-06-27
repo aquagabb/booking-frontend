@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import Slider from 'react-slick';
+import { useMemo } from 'react';
+import ReactSlick from 'react-slick';
 import { MapPin, Users, ChevronLeft, ChevronRight, Heart, Star } from 'lucide-react';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
@@ -9,41 +9,9 @@ import {
   useFavoritesStore,
 } from '../../store/favorites.store';
 
-export type PricingItem = {
-  currency?: string;
-  defaultMode?: string;
-  hour?: { price: number; min?: number };
-  day?: { price: number; min?: number };
-  guest?: { price: number; min?: number };
-  isPoa?: boolean;
-};
+const Slider = ReactSlick.default ?? ReactSlick;
 
-export type PricingCategoryItem = {
-  id: number;
-  categoryId: number;
-  pricing: PricingItem[];
-};
-
-interface RestaurantCardProps {
-  photos: string[];
-  name: string;
-  slug: string;
-  address: string;
-  rating?: number;
-  ratingCount?: number;
-  maxGuests: number;
-  viewFavorite: boolean;
-  locationId?: number;
-  onToggleFavorite?: (locationId: number, newFavoriteState: boolean) => void;
-  pricing?: PricingItem[];
-  pricingCategories?: PricingCategoryItem[];
-}
-
-function getDisplayPricing(
-  eventTypeId: string | null,
-  pricing?: PricingItem[],
-  pricingCategories?: PricingCategoryItem[]
-): { currency: string; hourPrice?: number; dayPrice?: number; guestPrice?: number; isPoa: boolean } | null {
+function getDisplayPricing(eventTypeId, pricing, pricingCategories) {
   if (!pricing?.length && !pricingCategories?.length) return null;
   const categoryMatch = eventTypeId
     ? pricingCategories?.find((pc) => String(pc.categoryId) === eventTypeId)
@@ -64,14 +32,30 @@ function getDisplayPricing(
   };
 }
 
-function formatCurrency(amount: number, currency: string): string {
+function formatCurrency(amount, currency) {
   if (currency === 'EUR') return `€${amount.toLocaleString()}`;
   if (currency === 'USD') return `$${amount.toLocaleString()}`;
   return `${amount.toLocaleString()} ${currency}`;
 }
 
-const RestaurantCard: React.FC<RestaurantCardProps> = ({
-  photos,
+const CustomArrow = ({ direction, onClick, className, style }) => {
+  const Icon = direction === 'left' ? ChevronLeft : ChevronRight;
+  return (
+    <div
+      className={`${className ?? ''} absolute top-1/2 ${direction === 'left' ? 'left-2' : 'right-2'
+        } z-10 transform -translate-y-1/2 
+      bg-white rounded-full shadow p-1 cursor-pointer 
+      opacity-0 group-hover:opacity-100 transition-opacity duration-200`}
+      style={style}
+      onClick={onClick}
+    >
+      <Icon size={20} />
+    </div>
+  );
+};
+
+const RestaurantCard = ({
+  photos = [],
   name,
   address,
   maxGuests,
@@ -141,12 +125,13 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
         {photos.length > 1 ? (
           <Slider {...sliderSettings}>
             {photos.map((img, i) => (
-              <img
-                key={i}
-                src={img}
-                alt={`${name}-${i}`}
-                className="object-cover w-full h-56"
-              />
+              <div key={i}>
+                <img
+                  src={img}
+                  alt={`${name}-${i}`}
+                  className="object-cover w-full h-56"
+                />
+              </div>
             ))}
           </Slider>
         ) : (
@@ -176,11 +161,11 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
 
         <h3 className="text-base font-semibold line-clamp-2 truncate">{name}</h3>
 
-          <div className="flex items-center gap-1 text-accent">
-            <Star size={16} className="fill-current stroke-none" />
-            <span>{rating || '0'}</span>
-            <span className="text-gray-400">({ratingCount} reviews)</span>
-          </div>
+        <div className="flex items-center gap-1 text-accent">
+          <Star size={16} className="fill-current stroke-none" />
+          <span>{rating || '0'}</span>
+          <span className="text-gray-400">({ratingCount} reviews)</span>
+        </div>
         <div className="flex items-center gap-1 text-gray-600">
           <Users size={14} className="shrink-0 text-gray-400" />
           <span>{maxGuests} guests</span>
@@ -230,21 +215,6 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
           {viewFavorite ? 'View Details' : 'Reserve Now'}
         </button>
       </div>
-    </div>
-  );
-};
-
-const CustomArrow = ({ direction, onClick }: { direction: 'left' | 'right'; onClick?: () => void }) => {
-  const Icon = direction === 'left' ? ChevronLeft : ChevronRight;
-  return (
-    <div
-      className={`absolute top-1/2 ${direction === 'left' ? 'left-2' : 'right-2'
-        } z-10 transform -translate-y-1/2 
-      bg-white rounded-full shadow p-1 cursor-pointer 
-      opacity-0 group-hover:opacity-100 transition-opacity duration-200`}
-      onClick={onClick}
-    >
-      <Icon size={20} />
     </div>
   );
 };

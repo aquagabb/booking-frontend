@@ -27,7 +27,6 @@ import PartnerBecomePage from '../pages/PartnerBecomePage';
 
 
 
-
 export type AppRoute = {
   path: string;
   element: ReactElement;

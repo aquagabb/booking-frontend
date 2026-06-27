@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { Home, ArrowLeft } from 'lucide-react';
 
-const NotFound = () => {
+const NotFound404 = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
 
@@ -174,5 +174,5 @@ const NotFound = () => {
     );
 };
 
-export default NotFound;
+export default NotFound404;
 
