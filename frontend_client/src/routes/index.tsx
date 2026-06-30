@@ -1,7 +1,7 @@
 
 import Login from '../pages/auth/Login';
 import Register from '../pages/auth/Register';
-import Restaurants from '../pages/Restaurants';
+import Restaurants from '../pages/search/Restaurants';
 import Restaurant from '../pages/Restaurant';
 import Checkout from '../pages/checkout/Checkout';
 import CheckoutThankYou from '../pages/checkout/CheckoutThankYou';

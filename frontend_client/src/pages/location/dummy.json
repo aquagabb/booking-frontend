@@ -1,0 +1,49 @@
+{
+  "addons": [
+    {
+      "id": 1,
+      "slug": "dummy-flori",
+      "title": "Aranjamente florale",
+      "price": 150,
+      "type": "item",
+      "photo": null,
+      "details": "Aranjamente florale personalizate pentru mese, intrare sau scenă. Include consultanță pentru paleta de culori și livrare în ziua evenimentului."
+    },
+    {
+      "id": 2,
+      "slug": "dummy-candy",
+      "title": "Candy Bar",
+      "price": 200,
+      "type": "item",
+      "photo": null,
+      "details": "Candy bar complet amenajat cu dulciuri, decor tematic și veselă. Poate fi adaptat la tema evenimentului (nuntă, botez, corporate)."
+    },
+    {
+      "id": 3,
+      "slug": "dummy-bauturi",
+      "title": "Cafea, ceai, apă, suc all day",
+      "price": 8,
+      "type": "person",
+      "photo": null,
+      "details": "Băuturi nelimitate pe durata evenimentului: cafea, ceai, apă plată și minerală, suc. Servire la bar sau stații dedicate."
+    },
+    {
+      "id": 4,
+      "slug": "dummy-colete",
+      "title": "Preluarea coletelor",
+      "price": 50,
+      "type": "flat_fee",
+      "photo": null,
+      "details": "Serviciu de recepție și depozitare colete înainte de eveniment. Include confirmare la sosire și predare la cerere."
+    },
+    {
+      "id": 5,
+      "slug": "dummy-audio",
+      "title": "Sistem audio și microfon",
+      "price": 35,
+      "type": "hour",
+      "photo": null,
+      "details": "Sistem audio profesional cu microfon wireless, boxe și operator tehnic. Ideal pentru discursuri, prezentări sau momente muzicale."
+    }
+  ]
+}

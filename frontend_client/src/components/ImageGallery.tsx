@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import ImageModal from '../components/shared/ImageModal';
+import ImageModal from '../components/shared/ImageModal.jsx';
 
 const ImageGallery = ({ name = '', categories = [], images = [] }) => {
   const [showModal, setShowModal] = useState(false);

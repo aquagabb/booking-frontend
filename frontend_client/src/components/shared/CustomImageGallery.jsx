@@ -1,22 +1,18 @@
-import React, { useRef, useState } from 'react';
-import Slider from 'react-slick';
+import { useRef, useState } from 'react';
+import ReactSlick from 'react-slick';
 import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 
-interface CustomImageGalleryProps {
-  images: string[];
-  initialIndex?: number;
-  onClose?: () => void;
-}
+const Slider = ReactSlick.default ?? ReactSlick;
 
-const CustomImageGallery: React.FC<CustomImageGalleryProps> = ({
+const CustomImageGallery = ({
   images,
   initialIndex = 0,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
-  const mainSliderRef = useRef<Slider | null>(null);
-  const thumbSliderRef = useRef<Slider | null>(null);
+  const mainSliderRef = useRef(null);
+  const thumbSliderRef = useRef(null);
   const hasMultipleImages = images.length > 1;
 
   const mainSettings = {
@@ -26,10 +22,10 @@ const CustomImageGallery: React.FC<CustomImageGalleryProps> = ({
     slidesToShow: 1,
     slidesToScroll: 1,
     initialSlide: initialIndex,
-    beforeChange: (_: number, next: number) => setCurrentIndex(next),
+    beforeChange: (_, next) => setCurrentIndex(next),
     nextArrow: hasMultipleImages ? <CustomArrow direction="right" /> : <></>,
     prevArrow: hasMultipleImages ? <CustomArrow direction="left" /> : <></>,
-    afterChange: (index: number) => {
+    afterChange: (index) => {
       setCurrentIndex(index);
       if (hasMultipleImages) {
         setTimeout(() => {
@@ -46,7 +42,7 @@ const CustomImageGallery: React.FC<CustomImageGalleryProps> = ({
     focusOnSelect: true,
     variableWidth: true,
     centerMode: true,
-    beforeChange: (_: number, next: number) => {
+    beforeChange: (_, next) => {
       if (next !== currentIndex) {
         mainSliderRef.current?.slickGoTo(next);
       }
@@ -55,7 +51,7 @@ const CustomImageGallery: React.FC<CustomImageGalleryProps> = ({
 
   return (
     <div className="relative w-full h-full flex flex-col items-center justify-center p-2">
-      <div className="w-full max-w-7xl flex items-center justify-center mb-2">
+      <div className="w-full max-w-7xl flex items-center justify-center mb-2 overflow-visible">
         {hasMultipleImages ? (
           <Slider ref={mainSliderRef} {...mainSettings} className="w-full h-full">
             {images.map((img, i) => (
@@ -120,23 +116,21 @@ const CustomImageGallery: React.FC<CustomImageGalleryProps> = ({
   );
 };
 
-const CustomArrow = ({
-  direction,
-  onClick,
-}: {
-  direction: 'left' | 'right';
-  onClick?: () => void;
-}) => {
+const CustomArrow = ({ direction, onClick, style }) => {
+  if (style?.display === 'none') return null;
+
   const Icon = direction === 'left' ? ChevronLeft : ChevronRight;
   return (
-    <div
+    <button
+      type="button"
+      aria-label={direction === 'left' ? 'Previous slide' : 'Next slide'}
       onClick={onClick}
-      className={`absolute top-1/2 z-40 transform -translate-y-1/2 
-        ${direction === 'left' ? '-left-6 sm:-left-10' : '-right-6 sm:-right-10'}
+      className={`absolute top-1/2 z-40 -translate-y-1/2
+        ${direction === 'left' ? 'left-4' : 'right-4'}
         bg-black/60 hover:bg-black/80 text-white rounded-full shadow-lg p-3 cursor-pointer transition`}
     >
       <Icon size={32} />
-    </div>
+    </button>
   );
 };
 

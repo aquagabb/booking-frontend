@@ -1,40 +1,36 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import RestaurantCard from "../components/shared/RestaurantCard";
-import Filters from "../components/Filters";
-import Search from "../components/Search";
-import { useSearchStore } from "../store/search.store";
-import { searchLocations } from "../api/locations/locations";
+import RestaurantCard from "../../components/shared/RestaurantCard";
+import Filters from "../../components/Filters";
+import Search from "../../components/Search";
+import { useSearchStore } from "../../store/search.store";
+import { searchLocations } from "../../api/locations/locations";
 import { useSearchParams } from "react-router-dom";
 import { format, parseISO } from "date-fns";
 
-const debounce = (fn: (...args: any[]) => void, delay = 400) => {
-  let timer: NodeJS.Timeout;
-  return (...args: any[]) => {
+const debounce = (fn, delay = 400) => {
+  let timer;
+  return (...args) => {
     clearTimeout(timer);
     timer = setTimeout(() => fn(...args), delay);
   };
 };
 
-type FilterState = {
-  capacityRange?: (string | number)[];
-  facilities?: (string | number)[];
-  seatingPlans?: (string | number)[];
-};
-
-const Restaurants: React.FC = () => {
+const Restaurants = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { location, eventType, date, setSearch } = useSearchStore();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [results, setResults] = useState<any[]>([]);
-  const [similarResults, setSimilarResults] = useState<any[]>([]);
+  const [results, setResults] = useState([]);
+  const [similarResults, setSimilarResults] = useState([]);
   const [hasNoDirectResults, setHasNoDirectResults] = useState(false);
-  const [filters, setFilters] = useState<FilterState>({
+  const [filters, setFilters] = useState({
     capacityRange: [],
     facilities: [],
     seatingPlans: [],
+    priceRange: [],
+    pricingTypes: [],
   });
-  const [predefinedFilters, setPredefinedFilters] = useState<any>({});
+  const [predefinedFilters, setPredefinedFilters] = useState({});
 
   const hasInitialized = useRef(false);
 
@@ -48,6 +44,8 @@ const Restaurants: React.FC = () => {
     const urlFacilities = searchParams.get("facilities")?.split(",") || [];
     const urlSeatingPlans = searchParams.get("seatingPlans")?.split(",") || [];
     const urlCapacityRange = searchParams.get("capacityRange")?.split(",") || [];
+    const urlPriceRange = searchParams.get("priceRange")?.split(",") || [];
+    const urlPricingTypes = searchParams.get("pricingTypes")?.split(",") || [];
 
     setSearch({
       location: urlLocation,
@@ -61,6 +59,8 @@ const Restaurants: React.FC = () => {
       facilities: urlFacilities,
       seatingPlans: urlSeatingPlans,
       capacityRange: urlCapacityRange,
+      priceRange: urlPriceRange,
+      pricingTypes: urlPricingTypes,
     });
 
     hasInitialized.current = true;
@@ -68,17 +68,21 @@ const Restaurants: React.FC = () => {
 
 
   const searchItems = useCallback(
-    debounce(async (filters: FilterState) => {
+    debounce(async (filters) => {
       try {
         setIsLoading(true);
 
-        const activeFilters: Record<string, any> = {};
+        const activeFilters = {};
         if (filters.capacityRange && filters.capacityRange.length)
           activeFilters.capacityRange = filters.capacityRange;
         if (filters.facilities && filters.facilities.length)
           activeFilters.facilities = filters.facilities;
         if (filters.seatingPlans && filters.seatingPlans.length)
           activeFilters.seatingPlans = filters.seatingPlans;
+        if (filters.priceRange && filters.priceRange.length)
+          activeFilters.priceRange = filters.priceRange;
+        if (filters.pricingTypes && filters.pricingTypes.length)
+          activeFilters.pricingTypes = filters.pricingTypes;
         if (eventType) {
           const eventTypeValue = typeof eventType === "object" && eventType.value != null
             ? String(eventType.value)
@@ -111,7 +115,7 @@ const Restaurants: React.FC = () => {
   useEffect(() => {
     if (!hasInitialized.current) return;
 
-    const params: Record<string, string> = {};
+    const params = {};
     if (location) params.term = location;
     if (eventType) {
       const eventTypeValue = typeof eventType === 'object' && eventType.value 
@@ -127,6 +131,10 @@ const Restaurants: React.FC = () => {
       params.seatingPlans = filters.seatingPlans.join(",");
     if (filters.capacityRange && filters.capacityRange.length)
       params.capacityRange = filters.capacityRange.join(",");
+    if (filters.priceRange && filters.priceRange.length)
+      params.priceRange = filters.priceRange.join(",");
+    if (filters.pricingTypes && filters.pricingTypes.length)
+      params.pricingTypes = filters.pricingTypes.join(",");
 
     setSearchParams(params, { replace: true });
   }, [location, eventType, date, filters, setSearchParams]);

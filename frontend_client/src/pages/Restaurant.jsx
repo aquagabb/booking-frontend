@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import RestaurantCard from '../components/RestaurantDetails';
+import LocationDetails from './location/LocationDetails';
 import ImageGallery from '../components/ImageGallery';
 import ReservationRight from '../components/ReservationRight';
 import { MapPin, Star, Heart, Share2, Check, Share } from 'lucide-react';
@@ -99,14 +99,28 @@ const Restaurant = () => {
     );
   }
 
-  const allPhotos = location.photos?.flatMap(category =>
-    category.photos?.filter(photo => photo.isVisible).map(photo => photo.url) || []
-  ) || [];
+  const normalizePhotos = (photos) => {
+    if (!photos?.length) return { allPhotos: [], photoCategories: [] };
 
-  const photoCategories = location.photos?.map(category => ({
-    name: category.name,
-    images: category.photos?.map(photo => photo.url) || []
-  })) || [];
+    if (typeof photos[0] === 'string') {
+      return {
+        allPhotos: photos.filter(Boolean),
+        photoCategories: [],
+      };
+    }
+
+    const allPhotos = photos.flatMap((category) =>
+      category.photos?.filter((photo) => photo.isVisible).map((photo) => photo.url) || []
+    );
+    const photoCategories = photos.map((category) => ({
+      name: category.name,
+      images: category.photos?.map((photo) => photo.url) || [],
+    }));
+
+    return { allPhotos, photoCategories };
+  };
+
+  const { allPhotos, photoCategories } = normalizePhotos(location.photos);
 
   // Extract minimum values from pricing
   const pricingData = location.pricing && location.pricing.length > 0 ? location.pricing[0] : null;
@@ -155,7 +169,7 @@ const Restaurant = () => {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 text-gray-600 text-sm mt-2">
+        <div className="flex flex-wrap items-center gap-2 text-gray-600 text-sm">
           <MapPin width={16} height={16} />
           <p>{location.address}</p>
           <span className="text-gray-400">|</span>
@@ -190,7 +204,7 @@ const Restaurant = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start mt-6">
           <div className="md:col-span-8">
-            <RestaurantCard location={location} />
+            <LocationDetails location={location} />
           </div>
 
           <div className="md:col-span-4">

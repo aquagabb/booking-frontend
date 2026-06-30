@@ -414,6 +414,16 @@
     "up_to_people": "up to {{count}} people",
     "facilities_features": "Facilities & Features",
     "space_rules": "Space Rules",
+    "addons_title": "Add-ons from the host",
+    "addons_subtitle": "Host provided services, items or options. Available at checkout.",
+    "addons_show_all": "Show All",
+    "addons_show_less": "Show less",
+    "addons": {
+      "type_item": "item",
+      "type_flat_fee": "flat fee",
+      "type_hour": "hr",
+      "type_person": "person"
+    },
     "seating": {
       "dining": "Perfect for formal dining events and meals.",
       "standing": "Ideal for cocktail parties and networking events.",
