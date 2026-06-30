@@ -14,10 +14,14 @@ import {
   Package,
   Mic2,
   CircleHelp,
+  Award,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
+import { useUserStore } from "../../store/user.store";
 import SeatingPlanIcon from "../../components/shared/SeatingPlanIcon";
+import defaultStaticMap from "../../assets/staticmap.png";
 import dummyData from "./dummy.json";
 
 const ADDON_FALLBACK_ICONS = {
@@ -71,6 +75,91 @@ const formatAddonPrice = (price) =>
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(price);
+
+const getHostInitials = (name) =>
+  name
+    ?.split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "?";
+
+const HostDetails = ({ host, t, i18n, onMessageHost }) => {
+  const memberSinceLabel = host.memberSince
+    ? t("restaurant.host_member_since", {
+        date: new Intl.DateTimeFormat(i18n.language, {
+          month: "long",
+          year: "numeric",
+        }).format(new Date(host.memberSince)),
+      })
+    : null;
+
+  return (
+    <div className="border-b border-gray-200 pb-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex items-start gap-4 min-w-0">
+          <div className="relative shrink-0">
+            {host.avatar ? (
+              <img
+                src={host.avatar}
+                alt={host.name}
+                className="h-16 w-16 rounded-full object-cover border border-gray-200"
+              />
+            ) : (
+              <div className="flex h-16 w-16 items-center justify-center rounded-full border border-gray-200 bg-gray-100 text-lg font-semibold text-gray-700">
+                {getHostInitials(host.name)}
+              </div>
+            )}
+            {host.badge && (
+              <span className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-violet-600 text-white">
+                <Award size={14} />
+              </span>
+            )}
+          </div>
+
+          <div className="min-w-0">
+            <p className="text-base font-semibold text-gray-900 underline decoration-gray-400 underline-offset-2">
+              {t("restaurant.hosted_by", { name: host.name })}
+            </p>
+            {host.badge && (
+              <p className="mt-0.5 text-sm text-gray-500">{host.badge}</p>
+            )}
+            {memberSinceLabel && (
+              <p className="mt-1 text-sm text-gray-500">{memberSinceLabel}</p>
+            )}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={onMessageHost}
+          className="shrink-0 self-start rounded-lg border border-gray-900 px-5 py-2.5 text-sm font-medium text-gray-900 transition hover:bg-gray-50"
+        >
+          {t("restaurant.message_host")}
+        </button>
+      </div>
+
+      {(host.responseTime || host.responseRate) && (
+        <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-700">
+          {host.responseTime && (
+            <span>
+              {t("restaurant.host_response_time", { value: host.responseTime })}
+            </span>
+          )}
+          {host.responseRate && (
+            <span>
+              {t("restaurant.host_response_rate", { value: host.responseRate })}
+            </span>
+          )}
+        </div>
+      )}
+
+      <p className="mt-4 text-sm leading-relaxed text-gray-500">
+        {t("restaurant.host_contact_notice")}
+      </p>
+    </div>
+  );
+};
 
 const AddonItem = ({ addon, typeLabel }) => {
   const FallbackIcon = ADDON_FALLBACK_ICONS[addon.type] || Cake;
@@ -130,8 +219,27 @@ const AddonItem = ({ addon, typeLabel }) => {
   );
 };
 
+const buildGoogleMapsUrl = (location, staticMap) => {
+  if (location?.googleMapsUrl) return location.googleMapsUrl;
+  if (staticMap?.googleMapsUrl) return staticMap.googleMapsUrl;
+
+  const query = location?.address || staticMap?.address;
+  if (query) {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+  }
+
+  const { lat, lng } = staticMap || {};
+  if (lat != null && lng != null) {
+    return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+  }
+
+  return null;
+};
+
 const LocationDetails = ({ location }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
+  const user = useUserStore((state) => state.user);
 
   const features = location?.featuresList?.map(feature =>
     t(`features.${feature.label}`, { defaultValue: feature.label })
@@ -154,6 +262,30 @@ const LocationDetails = ({ location }) => {
     const byDay = Object.fromEntries(source.map((item) => [item.day, item]));
     return WEEKDAY_ORDER.map((day) => byDay[day]).filter(Boolean);
   }, [location?.openingHours, location?.weeklyPrices]);
+
+  const host = useMemo(() => {
+    const fromApi = location?.host || location?.owner || location?.manager;
+    return fromApi || dummyData.host || null;
+  }, [location?.host, location?.owner, location?.manager]);
+
+  const staticMap = useMemo(() => {
+    return location?.staticMap || dummyData.staticMap || null;
+  }, [location?.staticMap]);
+
+  const staticMapImageUrl = location?.staticMap?.imageUrl || defaultStaticMap;
+
+  const googleMapsUrl = useMemo(
+    () => buildGoogleMapsUrl(location, staticMap),
+    [location, staticMap]
+  );
+
+  const handleMessageHost = () => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+    navigate("/account/messages");
+  };
 
   const [showAllAddons, setShowAllAddons] = useState(false);
 
@@ -246,6 +378,15 @@ const LocationDetails = ({ location }) => {
           </div>
         )}
       </div>
+
+      {host && (
+        <HostDetails
+          host={host}
+          t={t}
+          i18n={i18n}
+          onMessageHost={handleMessageHost}
+        />
+      )}
 
       {openingHours.length > 0 && (
         <div className="border-b border-gray-200 pb-6">
@@ -354,6 +495,54 @@ const LocationDetails = ({ location }) => {
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {staticMapImageUrl && (
+        <div className="border-b border-gray-200 pb-6">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+            {t("restaurant.location_title")}
+          </h2>
+
+          {location?.address && (
+            <p className="mb-4 text-sm text-gray-700">{location.address}</p>
+          )}
+
+          {googleMapsUrl ? (
+            <a
+              href={googleMapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block overflow-hidden rounded-lg border border-gray-200 shadow-sm transition hover:shadow-md"
+            >
+              <img
+                src={staticMapImageUrl}
+                alt={t("restaurant.location_title")}
+                className="h-auto w-full object-cover"
+                loading="lazy"
+              />
+            </a>
+          ) : (
+            <div className="overflow-hidden rounded-lg border border-gray-200 shadow-sm">
+              <img
+                src={staticMapImageUrl}
+                alt={t("restaurant.location_title")}
+                className="h-auto w-full object-cover"
+                loading="lazy"
+              />
+            </div>
+          )}
+
+          {googleMapsUrl && (
+            <a
+              href={googleMapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-block text-sm font-medium text-blue-600 hover:underline"
+            >
+              {t("restaurant.view_on_google_maps")}
+            </a>
+          )}
         </div>
       )}
 

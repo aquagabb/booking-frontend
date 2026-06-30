@@ -43,6 +43,14 @@
       "closesNextDay": false
     }
   ],
+  "host": {
+    "name": "Harvey Specter",
+    "avatar": null,
+    "badge": "Power Host",
+    "memberSince": "2021-03-15",
+    "responseTime": "within an hour",
+    "responseRate": "100%"
+  },
   "addons": [
     {
       "id": 1,
