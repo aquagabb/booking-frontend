@@ -13,6 +13,7 @@ import {
   Coffee,
   Package,
   Mic2,
+  CircleHelp,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -27,6 +28,43 @@ const ADDON_FALLBACK_ICONS = {
 };
 
 const INITIAL_ADDONS_VISIBLE = 4;
+
+const WEEKDAY_ORDER = [
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+];
+
+const OpeningHoursRow = ({ dayHours, t }) => {
+  const hoursLabel = dayHours.closesNextDay
+    ? t("restaurant.opening_hours_next_day", {
+        open: dayHours.open,
+        close: dayHours.close,
+      })
+    : t("restaurant.opening_hours_range", {
+        open: dayHours.open,
+        close: dayHours.close,
+      });
+
+  const dayLabel = t(`restaurant.opening_hours_days.${dayHours.day}`, {
+    defaultValue: dayHours.day,
+  });
+
+  return (
+    <div className="flex items-center gap-4 justify-between">
+      <span className="text-base font-medium text-gray-900 w-28 shrink-0 capitalize">
+        {dayLabel}
+      </span>
+      <span className="text-sm text-gray-700 whitespace-nowrap">
+        {hoursLabel}
+      </span>
+    </div>
+  );
+};
 
 const formatAddonPrice = (price) =>
   new Intl.NumberFormat("ro-RO", {
@@ -110,6 +148,13 @@ const LocationDetails = ({ location }) => {
     return [...fromApi, ...(dummyData.addons || [])];
   }, [location?.addons, location?.addOns]);
 
+  const openingHours = useMemo(() => {
+    const fromApi = location?.openingHours || location?.weeklyPrices || [];
+    const source = fromApi.length > 0 ? fromApi : dummyData.openingHours || [];
+    const byDay = Object.fromEntries(source.map((item) => [item.day, item]));
+    return WEEKDAY_ORDER.map((day) => byDay[day]).filter(Boolean);
+  }, [location?.openingHours, location?.weeklyPrices]);
+
   const [showAllAddons, setShowAllAddons] = useState(false);
 
   const visibleAddons = showAllAddons ? addons : addons.slice(0, INITIAL_ADDONS_VISIBLE);
@@ -180,7 +225,7 @@ const LocationDetails = ({ location }) => {
 
         {(features?.length > 0 || location?.maxGuests) && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-4">
               {location?.maxGuests && (
                 <div className="flex items-center gap-3 p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition">
                   <Users size={18} />
@@ -202,7 +247,42 @@ const LocationDetails = ({ location }) => {
         )}
       </div>
 
-     
+      {openingHours.length > 0 && (
+        <div className="border-b border-gray-200 pb-6">
+          <div className="mb-4 flex items-center gap-2">
+            <h2 className="text-2xl font-semibold text-gray-900">
+              {t("restaurant.opening_hours_title")}
+            </h2>
+            <div className="relative group/opening-hours-info">
+              <button
+                type="button"
+                className="rounded-full p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                aria-label={t("restaurant.opening_hours_title")}
+              >
+                <CircleHelp size={18} />
+              </button>
+              <div
+                role="tooltip"
+                className="pointer-events-none absolute left-1/2 top-full z-10 mt-2 w-72 -translate-x-1/2 rounded-lg border border-gray-200 bg-white p-3 text-sm text-gray-600 shadow-lg opacity-0 invisible transition-all group-hover/opening-hours-info:opacity-100 group-hover/opening-hours-info:visible group-focus-within/opening-hours-info:opacity-100 group-focus-within/opening-hours-info:visible"
+              >
+                {t("restaurant.opening_hours_info")}
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {openingHours.map((dayHours) => (
+              <OpeningHoursRow
+                key={dayHours.day}
+                dayHours={dayHours}
+                t={t}
+              />
+            ))}
+          </div>
+
+        </div>
+      )}
+
       {seatingPlans.length > 0 && (
         <div className="border-b border-gray-200 pb-6">
           <h2 className="text-2xl font-semibold text-gray-900 mb-4">{t("restaurant.seating_options")}</h2>

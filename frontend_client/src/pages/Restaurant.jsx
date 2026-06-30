@@ -4,9 +4,10 @@ import LocationDetails from './location/LocationDetails';
 import ImageGallery from '../components/ImageGallery';
 import ReservationRight from '../components/ReservationRight';
 import { MapPin, Star, Heart, Share2, Check, Share } from 'lucide-react';
-import { addLocationToFavorite, checkIsFavoriteLocation, getLocationBySlug, removeLocationFavorite } from '../api/locations/locations';
+import { addLocationToFavorite, checkIsFavoriteLocation, getHomePageLocations, getLocationBySlug, removeLocationFavorite } from '../api/locations/locations';
 import { useEffect, useState } from 'react';
 import { useUserStore } from '../store/user.store';
+import RestaurantCard from '../components/shared/RestaurantCard';
 
 const Restaurant = () => {
   const { t } = useTranslation();
@@ -17,6 +18,7 @@ const Restaurant = () => {
   const [loading, setLoading] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [homepageLocations, setHomepageLocations] = useState([]);
 
   const fetchLocationData = async (slug) => {
     try {
@@ -50,6 +52,27 @@ const Restaurant = () => {
       fetchLocationData(slug);
     }
   }, [slug]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchHomepageLocations = async () => {
+      try {
+        const { response } = await getHomePageLocations();
+        if (!cancelled) {
+          setHomepageLocations(response?.data || []);
+        }
+      } catch (error) {
+        console.error('Error fetching homepage locations:', error);
+      }
+    };
+
+    fetchHomepageLocations();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleToggleFavorite = async () => {
     if (!location.id) return;
@@ -128,6 +151,7 @@ const Restaurant = () => {
   const minim_hours = pricingData?.day?.min || null;
   const minim_days = null; // Not currently in the pricing structure
   const minim_guests = pricingData?.guest?.min || null;
+  const otherLocations = homepageLocations.filter((loc) => loc.id !== location.id);
 
   return (
     <div>
@@ -224,6 +248,30 @@ const Restaurant = () => {
             />
           </div>
         </div>
+
+        {otherLocations.length > 0 && (
+          <div className="mt-4">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">{t('restaurant.similar_venues')}</h2>
+            <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+              {otherLocations.map((loc) => (
+                  <RestaurantCard
+                    key={loc.id}
+                    name={loc.name}
+                    slug={loc.slug}
+                    address={loc.address}
+                    rating={parseFloat(loc.rating)}
+                    ratingCount={loc.ratingCount}
+                    maxGuests={loc.maxGuests}
+                    photos={loc.photos}
+                    locationId={loc.id}
+                    viewFavorite={true}
+                    pricing={loc.pricing}
+                    pricingCategories={loc.pricingCategories}
+                  />
+                ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

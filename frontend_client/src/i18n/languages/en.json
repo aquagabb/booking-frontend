@@ -418,6 +418,22 @@
     "addons_subtitle": "Host provided services, items or options. Available at checkout.",
     "addons_show_all": "Show All",
     "addons_show_less": "Show less",
+    "opening_hours_title": "Opening Hours",
+    "opening_hours_info": "When the venue is open, for each day of the week.",
+    "opening_hours_next_day": "{{open}} – {{close}} next day",
+    "opening_hours_range": "{{open}} – {{close}}",
+    "opening_hours_days": {
+      "monday": "Monday",
+      "tuesday": "Tuesday",
+      "wednesday": "Wednesday",
+      "thursday": "Thursday",
+      "friday": "Friday",
+      "saturday": "Saturday",
+      "sunday": "Sunday"
+    },
+    "same_owner_title": "Same owner",
+    "similar_spaces": "Similar spaces",
+    "similar_venues": "Similar Venues",
     "addons": {
       "type_item": "item",
       "type_flat_fee": "flat fee",

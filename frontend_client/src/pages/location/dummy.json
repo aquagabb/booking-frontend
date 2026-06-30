@@ -1,4 +1,48 @@
 {
+  "openingHours": [
+    {
+      "day": "monday",
+      "open": "10:00",
+      "close": "23:00",
+      "closesNextDay": false
+    },
+    {
+      "day": "tuesday",
+      "open": "10:00",
+      "close": "23:00",
+      "closesNextDay": false
+    },
+    {
+      "day": "wednesday",
+      "open": "12:00",
+      "close": "23:00",
+      "closesNextDay": false
+    },
+    {
+      "day": "thursday",
+      "open": "10:00",
+      "close": "23:00",
+      "closesNextDay": false
+    },
+    {
+      "day": "friday",
+      "open": "10:00",
+      "close": "04:00",
+      "closesNextDay": true
+    },
+    {
+      "day": "saturday",
+      "open": "10:00",
+      "close": "04:00",
+      "closesNextDay": true
+    },
+    {
+      "day": "sunday",
+      "open": "10:00",
+      "close": "23:00",
+      "closesNextDay": false
+    }
+  ],
   "addons": [
     {
       "id": 1,

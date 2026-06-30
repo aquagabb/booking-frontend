@@ -20,8 +20,11 @@ export const searchLocationsSuggestions = async (term) => {
     return response;
 }
 
-export const getHomePageLocations = async () => {
-    const response = await request('GET', `/locations/homepage`);
+export const getHomePageLocations = async (params = {}) => {
+    const query = new URLSearchParams(
+        Object.entries(params).filter(([, value]) => value != null && value !== "")
+    ).toString();
+    const response = await request('GET', `/locations/homepage${query ? `?${query}` : ''}`);
     return response;
 }
 

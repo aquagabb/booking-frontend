@@ -347,6 +347,22 @@
     "addons_subtitle": "Servicii, articole sau opțiuni oferite de gazdă. Disponibile la checkout.",
     "addons_show_all": "Arată tot",
     "addons_show_less": "Arată mai puțin",
+    "opening_hours_title": "Orar",
+    "opening_hours_info": "Orele în care localul este deschis, pe fiecare zi a săptămânii.",
+    "opening_hours_next_day": "{{open}} – {{close}} a doua zi",
+    "opening_hours_range": "{{open}} – {{close}}",
+    "opening_hours_days": {
+      "monday": "Luni",
+      "tuesday": "Marți",
+      "wednesday": "Miercuri",
+      "thursday": "Joi",
+      "friday": "Vineri",
+      "saturday": "Sâmbătă",
+      "sunday": "Duminică"
+    },
+    "same_owner_title": "Același proprietar",
+    "similar_spaces": "Spații similare",
+    "similar_venues": "Locații similare",
     "addons": {
       "type_item": "bucată",
       "type_flat_fee": "taxă fixă",

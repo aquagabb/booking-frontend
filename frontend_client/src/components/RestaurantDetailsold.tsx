@@ -39,7 +39,7 @@ const RestaurantDetailsOld = ({ restaurant }) => {
 
         {(restaurant.highlights?.length > 0 || maxGuests) && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
        
               {maxGuests && (
                 <div className="flex items-center gap-3 p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition">
@@ -49,7 +49,7 @@ const RestaurantDetailsOld = ({ restaurant }) => {
               )}
 
               
-              {restaurant.highlights?.slice(0, 6).map((item) => (
+              {restaurant.highlights?.slice(0, 3).map((item) => (
                 <div
                   key={item}
                   className="flex items-center gap-3 p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition"
