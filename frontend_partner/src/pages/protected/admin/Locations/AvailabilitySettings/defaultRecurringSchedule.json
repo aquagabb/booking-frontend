@@ -1,0 +1,32 @@
+[
+  {
+    "id": "default-rule-summer",
+    "enabled": true,
+    "days": [0, 1, 2, 3, 4],
+    "startTime": "10:00",
+    "endTime": "18:00",
+    "dateFrom": "2026-06-01",
+    "dateTo": "2026-08-31",
+    "label": "Program de vară"
+  },
+  {
+    "id": "default-rule-weekday",
+    "enabled": true,
+    "days": [0, 1, 2, 3, 4],
+    "startTime": "09:00",
+    "endTime": "22:00",
+    "dateFrom": null,
+    "dateTo": null,
+    "label": "Program normal - in timpul saptamanii"
+  },
+  {
+    "id": "default-rule-weekend",
+    "enabled": true,
+    "days": [5, 6],
+    "startTime": "09:00",
+    "endTime": "23:45",
+    "dateFrom": null,
+    "dateTo": null,
+    "label": "Program de weekend"
+  }
+]
