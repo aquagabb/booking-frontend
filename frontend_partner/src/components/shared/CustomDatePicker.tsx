@@ -105,34 +105,36 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
           display: none !important;
         }
         .react-datepicker {
+          display: flex;
+          align-items: flex-start;
           font-family: inherit;
           border: 1px solid #e5e7eb;
           border-radius: 0.75rem;
           box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-          padding: 1rem;
+          padding: 0.625rem;
         }
         .react-datepicker__header {
           background-color: white;
           border-bottom: 1px solid #e5e7eb;
-          padding-top: 0.75rem;
-          padding-bottom: 0.75rem;
+          padding-top: 0.5rem;
+          padding-bottom: 0.5rem;
         }
         .react-datepicker__current-month {
           font-weight: 600;
-          font-size: 0.875rem;
+          font-size: 0.8125rem;
           color: #111827;
-          margin-bottom: 0.5rem;
+          margin-bottom: 0.375rem;
         }
         .react-datepicker__day-names {
           display: flex;
           justify-content: space-between;
-          margin-bottom: 0.5rem;
+          margin-bottom: 0.25rem;
         }
         .react-datepicker__day-name {
-          width: 2.5rem;
-          line-height: 2.5rem;
+          width: 1.85rem;
+          line-height: 1.85rem;
           color: #6b7280;
-          font-size: 0.75rem;
+          font-size: 0.7rem;
           font-weight: 500;
           text-transform: capitalize;
         }
@@ -144,13 +146,13 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
           justify-content: space-between;
         }
         .react-datepicker__day {
-          width: 2.5rem;
-          height: 2.5rem;
-          line-height: 2.5rem;
-          margin: 0.125rem;
+          width: 1.85rem;
+          height: 1.85rem;
+          line-height: 1.85rem;
+          margin: 0.1rem;
           border-radius: 0.5rem;
           color: #111827;
-          font-size: 0.875rem;
+          font-size: 0.8rem;
           transition: all 0.2s;
         }
         .react-datepicker__day:hover {
@@ -201,6 +203,18 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
         .react-datepicker__month-container {
           float: none;
         }
+        .react-datepicker__time-container {
+          float: none;
+          width: 70px;
+          margin-left: 0.5rem;
+        }
+        .react-datepicker__time-container .react-datepicker__time-box {
+          width: 70px !important;
+        }
+        .react-datepicker__time-list-item {
+          padding: 4px !important;
+          font-size: 0.8rem;
+        }
       `}</style>
       <DatePicker
         selected={selected}
@@ -214,6 +228,7 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
         maxDate={maxDate}
         monthsShown={1}
         popperPlacement="bottom-start"
+        popperProps={{ strategy: 'fixed' }}
         openToDate={openToDate}
         wrapperClassName="w-full"
         customInput={<CustomInput />}

@@ -50,7 +50,7 @@ const Sidebar = () => {
   return (
     <div
       className={clsx(
-        'h-full bg-white border-r shadow-md flex flex-col py-2 transition-all duration-300',
+        'h-full bg-white border-r  flex flex-col py-2 transition-all duration-300',
         isOpen ? 'w-60 px-4' : 'w-20 px-2'
       )}
     >

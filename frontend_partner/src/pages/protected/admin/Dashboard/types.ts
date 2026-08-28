@@ -1,0 +1,22 @@
+export type Booking = {
+  id: number;
+  code: string;
+  eventName: string;
+  locationName: string;
+  status: string;
+  guests: number;
+  totalPrice: number;
+  userId: number;
+  customerId: number;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  checkIn: string;
+  checkOut: string;
+  createdAt: string;
+  additionalInfo?: string;
+  cancellationReason?: string | null;
+  expiresAt?: string;
+  pendingConfirmationExpiresAt?: string;
+  expirationDate?: string;
+};

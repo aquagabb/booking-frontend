@@ -175,6 +175,24 @@
       "name_required": "Name is required"
     }
   },
+  "event_categories": {
+    "wedding": "Wedding",
+    "birthday": "Birthday",
+    "corporate": "Corporate",
+    "conference": "Conference",
+    "private_party": "Private Party",
+    "anniversary": "Anniversary",
+    "graduation": "Graduation",
+    "baptism": "Baptism",
+    "gala": "Gala",
+    "concert": "Concert",
+    "exhibition": "Exhibition",
+    "meeting": "Meeting",
+    "seminar": "Seminar",
+    "product_launch": "Product Launch",
+    "team_building": "Team Building",
+    "other": "Other"
+  },
   "bookings": {
     "location": "Location",
     "category": "Event Type",
@@ -354,6 +372,7 @@
     "cancelled": "Cancelled"
   },
   "dashboard": {
+    "upcoming_events": "Upcoming Events",
     "reservations": "Reservations",
     "reservations_upcoming": "Upcoming",
     "reservations_completed": "Completed",

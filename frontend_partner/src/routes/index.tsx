@@ -30,7 +30,7 @@ export const publicRoutes: AppRoute[] = [
 ];
 
 export const adminRoutes: AppRoute[] = [
-  { path: '/dashboard', element: <Dashboard /> },
+  { path: '/dashboard/:tab?', element: <Dashboard /> },
   { path: '/properties/:tab?', element: <LocationsPage /> },
   { path: '/messages', element: <MessagesAdmin /> },
   { path: '/properties/edit/:slug', element: <LocationPage /> },

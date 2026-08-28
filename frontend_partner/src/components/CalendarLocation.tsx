@@ -7,18 +7,20 @@ import { Dialog } from "@headlessui/react";
 import CustomModal from "./shared/Modals/CustomModal";
 import Overview from "../pages/protected/admin/Bookings/Overview";
 import { BookingFormBun } from "../pages/protected/admin/Forms/BookingFormBun";
+import AvailabilitySettings from "../pages/protected/admin/Locations/AvailabilitySettings";
 import CustomTextarea from "./shared/CustomTextarea";
 import CustomTimePicker from "./shared/CustomTimePicker";
-import { 
-  Calendar as CalendarIcon, 
+import {
+  Calendar as CalendarIcon,
   X,
   ChevronLeft,
   ChevronRight,
   Maximize2,
   Minimize2,
-  LayoutGrid,
-  Calendar as CalendarLucide,
-  Clock
+  Clock,
+  Plus,
+  Users,
+  Settings
 } from "lucide-react";
 import "./CalendarLocation.css";
 import CustomSelect from "./shared/CustomSelect";
@@ -168,6 +170,77 @@ function exclusiveEndMinuteToCheckOutHHmm(endExclusive: number): string {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
+/** Sub compania asta de minute, un interval "închis" e comprimat vizual în loc să ocupe spațiu proporțional */
+const TIMELINE_COMPACT_THRESHOLD_MIN = 60;
+const TIMELINE_COMPACT_HEIGHT_PX = 40;
+
+type TimelineDaySegment = {
+  realStart: number;
+  realEnd: number;
+  dispStart: number;
+  dispEnd: number;
+};
+
+type TimelineDayLayout = {
+  segments: TimelineDaySegment[];
+  totalHeightPx: number;
+};
+
+/** Construiește mapare minut-real -> pixel-afișat, comprimând intervalele închise lungi la o bandă fixă */
+function buildTimelineDayLayout(compactRanges: { start: number; end: number }[]): TimelineDayLayout {
+  const segments: TimelineDaySegment[] = [];
+  let cursor = 0;
+  let dispCursor = 0;
+
+  for (const range of compactRanges) {
+    if (range.start > cursor) {
+      const len = range.start - cursor;
+      segments.push({ realStart: cursor, realEnd: range.start, dispStart: dispCursor, dispEnd: dispCursor + len });
+      dispCursor += len;
+    }
+    segments.push({
+      realStart: range.start,
+      realEnd: range.end,
+      dispStart: dispCursor,
+      dispEnd: dispCursor + TIMELINE_COMPACT_HEIGHT_PX,
+    });
+    dispCursor += TIMELINE_COMPACT_HEIGHT_PX;
+    cursor = Math.max(cursor, range.end);
+  }
+
+  if (cursor < DAY_MINUTES) {
+    const len = DAY_MINUTES - cursor;
+    segments.push({ realStart: cursor, realEnd: DAY_MINUTES, dispStart: dispCursor, dispEnd: dispCursor + len });
+    dispCursor += len;
+  }
+
+  return { segments, totalHeightPx: dispCursor };
+}
+
+function mapMinuteToDisplayY(layout: TimelineDayLayout, minute: number): number {
+  const m = Math.min(Math.max(0, minute), DAY_MINUTES);
+  for (const seg of layout.segments) {
+    if (m >= seg.realStart && m <= seg.realEnd) {
+      const realLen = seg.realEnd - seg.realStart;
+      const frac = realLen > 0 ? (m - seg.realStart) / realLen : 0;
+      return seg.dispStart + frac * (seg.dispEnd - seg.dispStart);
+    }
+  }
+  return layout.totalHeightPx;
+}
+
+function mapDisplayYToMinute(layout: TimelineDayLayout, y: number): number {
+  const clampedY = Math.min(Math.max(0, y), layout.totalHeightPx);
+  for (const seg of layout.segments) {
+    if (clampedY >= seg.dispStart && clampedY <= seg.dispEnd) {
+      const dispLen = seg.dispEnd - seg.dispStart;
+      const frac = dispLen > 0 ? (clampedY - seg.dispStart) / dispLen : 0;
+      return seg.realStart + frac * (seg.realEnd - seg.realStart);
+    }
+  }
+  return DAY_MINUTES;
+}
+
 const transformBlockedDateToEvent = (blockedDate: any) => {
   const startDate = new Date(blockedDate.startDate);
   const endDate = new Date(blockedDate.endDate);
@@ -235,6 +308,37 @@ const CalendarLocation = (props: CalendarLocationProps = {}) => {
   const [preparedScheduleRules, setPreparedScheduleRules] = useState<PreparedScheduleRule[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // TEST: simulare program recurent L-V 12:00-22:00 si V-D 10:00-00:00 (sterge dupa ce testezi)
+  const mockSchedule: ApiAvailabilityBlockedItem[] = [
+    {
+      id: 1,
+      type: "schedule",
+      label: "Program L-V",
+      days: ["L", "Ma", "Mi", "J", "V"],
+      startTime: "12:00",
+      endTime: "22:00",
+      dateFrom: null,
+      dateTo: null,
+      enabled: true,
+    },
+    {
+      id: 2,
+      type: "schedule",
+      label: "Program V-D",
+      days: ["V", "S", "D"],
+      startTime: "10:00",
+      endTime: "00:00",
+      dateFrom: null,
+      dateTo: null,
+      enabled: true,
+    },
+  ];
+
+  useEffect(() => {
+    if (loading) return;
+    setPreparedScheduleRules(prepareScheduleRules(mockSchedule));
+  }, [loading]);
+
   const [isOpen, setIsOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<any>(null);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
@@ -248,6 +352,7 @@ const CalendarLocation = (props: CalendarLocationProps = {}) => {
   const [blockReason, setBlockReason] = useState<string>("");
   const [isTimelineModalOpen, setIsTimelineModalOpen] = useState(false);
   const [selectedDateForTimeline, setSelectedDateForTimeline] = useState<Date | null>(null);
+  const [isAvailabilityModalOpen, setIsAvailabilityModalOpen] = useState(false);
 
   /** Blocări recurente din reguli API — doar pentru modalul cu desfășurătorul zilei, nu în grid-ul calendarului */
   const recurringTimelineEvents = useMemo(() => {
@@ -299,6 +404,25 @@ const CalendarLocation = (props: CalendarLocationProps = {}) => {
     },
     [getEventsForDate]
   );
+
+  /** Comprimă vizual intervalele lungi "în afara programului" din desfășurătorul zilei */
+  const timelineDayLayout = useMemo(() => {
+    if (!selectedDateForTimeline) return null;
+    const dayStart = moment(selectedDateForTimeline).startOf("day");
+    const dayEnd = moment(selectedDateForTimeline).endOf("day");
+
+    const compactRanges = getEventsForDate(selectedDateForTimeline)
+      .filter((event) => event.isScheduleClosed)
+      .map((event) => {
+        const start = Math.max(0, moment.max(moment(event.start), dayStart).diff(dayStart, "minutes"));
+        const end = Math.min(DAY_MINUTES, moment.min(moment(event.end), dayEnd).diff(dayStart, "minutes"));
+        return { start, end };
+      })
+      .filter((range) => range.end - range.start > TIMELINE_COMPACT_THRESHOLD_MIN)
+      .sort((a, b) => a.start - b.start);
+
+    return { layout: buildTimelineDayLayout(compactRanges), compactRanges };
+  }, [selectedDateForTimeline, getEventsForDate]);
 
   const handleSelectSlot = ({ start, end }: any) => {
     const actualEnd = new Date(end);
@@ -388,6 +512,50 @@ const CalendarLocation = (props: CalendarLocationProps = {}) => {
       console.error("Error blocking date:", error);
       alert("Error blocking date. Please try again.");
     }
+  };
+
+  const handleQuickAddEvent = () => {
+    const todayStart = moment().startOf("day").toDate();
+    const todayEnd = moment().startOf("day").hour(23).minute(59).second(0).millisecond(0).toDate();
+
+    setSelectedSlot({ start: todayStart, end: todayEnd, isSameDay: true });
+    setSelectedEvent(null);
+    setIsEditing(false);
+    setChooseAction(null);
+    setCheckInTime(getCurrentTimeRoundedForPicker());
+    setCheckOutTime("23:59");
+    setBlockReason("");
+    setIsModalNewBooking(true);
+  };
+
+  const handleQuickBlockDay = async () => {
+    if (!locationId) return;
+    if (!window.confirm("Blochezi ziua de azi in intregime?")) return;
+
+    try {
+      const startDate = moment().startOf("day").toDate();
+      const endDate = moment().endOf("day").toDate();
+
+      const { status } = await createBlockedDate({
+        locationId: parseInt(locationId),
+        checkIn: startDate.toISOString(),
+        checkOut: endDate.toISOString(),
+      });
+
+      if (status === 200 || status === 201) {
+        await fetchBookings(false);
+      } else {
+        alert("Failed to block date. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error blocking date:", error);
+      alert("Error blocking date. Please try again.");
+    }
+  };
+
+  const handleGoToAvailabilitySettings = () => {
+    if (!locationId) return;
+    setIsAvailabilityModalOpen(true);
   };
 
   const combineDateTime = (date: Date, time: string): Date => {
@@ -651,6 +819,14 @@ const CalendarLocation = (props: CalendarLocationProps = {}) => {
         };
       }}
         components={{
+          event: ({ event }: { event: any }) => (
+            <div className="calendar-event-content">
+              <span className="calendar-event-title">{event.title}</span>
+              <span className="calendar-event-time">
+                {moment(event.start).format("HH:mm")} - {moment(event.end).format("HH:mm")}
+              </span>
+            </div>
+          ),
           toolbar: (props) => {
             const titleDateLabel =
               view === Views.DAY
@@ -729,7 +905,7 @@ const CalendarLocation = (props: CalendarLocationProps = {}) => {
                         className={`calendar-view-btn ${view === Views.MONTH ? 'active' : ''}`}
                         title="Month view"
                       >
-                        <LayoutGrid className="w-4 h-4" />
+                        Lună
                       </button>
                       <button
                         type="button"
@@ -740,7 +916,7 @@ const CalendarLocation = (props: CalendarLocationProps = {}) => {
                         className={`calendar-view-btn ${view === Views.WEEK ? 'active' : ''}`}
                         title="Week view"
                       >
-                        <CalendarLucide className="w-4 h-4" />
+                        Săptămână
                       </button>
                       <button
                         type="button"
@@ -751,7 +927,7 @@ const CalendarLocation = (props: CalendarLocationProps = {}) => {
                         className={`calendar-view-btn ${view === Views.DAY ? 'active' : ''}`}
                         title="Day view"
                       >
-                        <Clock className="w-4 h-4" />
+                        Zi
                       </button>
                     </div>
                     <button
@@ -818,10 +994,103 @@ const CalendarLocation = (props: CalendarLocationProps = {}) => {
   const showPickerLoading = needsLocationPicker && !pickerInitDone;
   const showNoLocations = needsLocationPicker && pickerInitDone && locationsForPicker.length === 0;
 
+  const today = new Date();
+  const todayEvents = getEventsForDate(today).sort(
+    (a, b) => moment(a.start).valueOf() - moment(b.start).valueOf()
+  );
+
+  const renderTodaySidebar = () => (
+    <div className="flex flex-col w-1/5 min-w-[240px] h-full min-h-0 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
+      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+          Ziua de azi
+        </p>
+        <p className="text-lg font-semibold text-gray-900 dark:text-gray-100 mt-1 capitalize">
+          {moment(today).format("D MMMM YYYY")}
+        </p>
+      </div>
+
+      <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-1 min-h-0 overflow-y-auto">
+        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
+          Evenimente in aceasta zi
+        </p>
+        {todayEvents.length === 0 ? (
+          <p className="text-sm text-gray-400 dark:text-gray-500">Niciun eveniment astazi.</p>
+        ) : (
+          <div className="space-y-2">
+            {todayEvents.map((event, index) => (
+              <button
+                key={event.id || index}
+                type="button"
+                onClick={() => handleSelectEvent(event)}
+                className="w-full text-left rounded-lg border border-gray-200 dark:border-gray-700 p-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className="w-2 h-2 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: event.isBlocked ? "#5f6368" : "#34a853" }}
+                  />
+                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                    {moment(event.start).format("HH:mm")} - {moment(event.end).format("HH:mm")}
+                  </span>
+                  {!event.isBlocked && !!event.guests && (
+                    <span className="ml-auto flex items-center gap-1 text-xs font-medium text-gray-500 dark:text-gray-400">
+                      <Users className="w-3 h-3" />
+                      {event.guests}
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mt-1 truncate">
+                  {event.title || event.eventName || "Eveniment"}
+                </p>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="p-4">
+        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
+          Actiuni rapide
+        </p>
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={handleQuickAddEvent}
+            disabled={!locationId}
+            className="w-full flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Plus className="w-4 h-4" />
+            Adauga eveniment
+          </button>
+          <button
+            type="button"
+            onClick={handleQuickBlockDay}
+            disabled={!locationId}
+            className="w-full flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Plus className="w-4 h-4" />
+            Blocheaza ziua
+          </button>
+          <button
+            type="button"
+            onClick={handleGoToAvailabilitySettings}
+            disabled={!locationId}
+            className="w-full flex items-center gap-2 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Pentru blocari recurente, configureaza programul locatiei"
+          >
+            <Settings className="w-4 h-4" />
+            Reguli de disponibilitate
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="flex h-[calc(100vh-200px)] overflow-hidden">
+    <div className="flex h-[calc(100vh-200px)] overflow-hidden gap-4">
       {/* Calendar Section */}
-      <div className="flex flex-col w-full">
+      <div className="flex flex-col w-4/5 min-w-0">
         <div className="google-calendar-container bg-white dark:bg-gray-900 h-full min-h-0 flex flex-col">
           <div className="flex min-h-0 flex-1 flex-col pb-6">
             {showPickerLoading ? (
@@ -842,6 +1111,9 @@ const CalendarLocation = (props: CalendarLocationProps = {}) => {
           </div>
         </div>
       </div>
+
+      {/* Today Sidebar */}
+      {renderTodaySidebar()}
 
       {/* Blocked Date Modal */}
       <Dialog open={selectedEvent !== null && selectedEvent.isBlocked && !isEditing} onClose={() => {
@@ -1029,8 +1301,9 @@ const CalendarLocation = (props: CalendarLocationProps = {}) => {
         <div className="fixed inset-0 bg-black/50" aria-hidden="true" />
         <div className="fixed inset-0 flex items-center justify-center">
           <Dialog.Panel className="flex h-full w-full min-h-0 flex-col bg-white dark:bg-gray-900">
-            <div className="flex min-h-0 flex-1 flex-col p-6">
-              {renderCalendar("100%")}
+            <div className="flex min-h-0 flex-1 gap-4 p-6">
+              <div className="flex min-h-0 flex-1 flex-col">{renderCalendar("100%")}</div>
+              {renderTodaySidebar()}
             </div>
           </Dialog.Panel>
         </div>
@@ -1215,28 +1488,49 @@ const CalendarLocation = (props: CalendarLocationProps = {}) => {
                   <p className="text-sm text-gray-500 dark:text-gray-400 mb-3 text-center">
                     Click pe o oră liberă în grilă sau pe eticheta orei pentru rezervare sau blocare.
                   </p>
-                  <div className="timeline-time-labels">
-                    {Array.from({ length: 24 }, (_, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        className="timeline-time-label w-full border-0 bg-transparent text-right"
-                        title={`Selectează intervalul liber la ${i.toString().padStart(2, "0")}:00`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openFreeSlotFromTimeline(selectedDateForTimeline, i * 60);
-                        }}
-                      >
-                        {i.toString().padStart(2, "0")}:00
-                      </button>
-                    ))}
+                  <div
+                    className="timeline-time-labels"
+                    style={{ height: `${timelineDayLayout?.layout.totalHeightPx ?? DAY_MINUTES}px` }}
+                  >
+                    {Array.from({ length: 24 }, (_, i) => i)
+                      .filter((i) => {
+                        if (!timelineDayLayout) return true;
+                        const minute = i * 60;
+                        return !timelineDayLayout.compactRanges.some(
+                          (range) => minute > range.start && minute < range.end
+                        );
+                      })
+                      .map((i) => {
+                        const top = timelineDayLayout
+                          ? mapMinuteToDisplayY(timelineDayLayout.layout, i * 60)
+                          : i * 60;
+                        return (
+                          <button
+                            key={i}
+                            type="button"
+                            className="timeline-time-label w-full border-0 bg-transparent text-right"
+                            style={{ top: `${top}px` }}
+                            title={`Selectează intervalul liber la ${i.toString().padStart(2, "0")}:00`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openFreeSlotFromTimeline(selectedDateForTimeline, i * 60);
+                            }}
+                          >
+                            {i.toString().padStart(2, "0")}:00
+                          </button>
+                        );
+                      })}
                   </div>
                   <div
                     className="timeline-container"
+                    style={{ height: `${timelineDayLayout?.layout.totalHeightPx ?? DAY_MINUTES}px` }}
                     onClick={(e) => {
                       if (e.target !== e.currentTarget) return;
                       const y = (e.nativeEvent as MouseEvent).offsetY;
-                      openFreeSlotFromTimeline(selectedDateForTimeline, y);
+                      const minuteY = timelineDayLayout
+                        ? mapDisplayYToMinute(timelineDayLayout.layout, y)
+                        : y;
+                      openFreeSlotFromTimeline(selectedDateForTimeline, minuteY);
                     }}
                   >
                     {getEventsForDate(selectedDateForTimeline)
@@ -1263,9 +1557,20 @@ const CalendarLocation = (props: CalendarLocationProps = {}) => {
                           
                           const effectiveEnd = continuesToNextDay ? dayEnd : eventEnd;
                           const duration = effectiveEnd.diff(eventStart.isBefore(dayStart) ? dayStart : eventStart, 'minutes');
-                          const heightPx = Math.max(50, duration);
-                          
-                          const topPositionPx = Math.max(0, minutesFromStart);
+                          const isScheduleClosedCompact = !!event.isScheduleClosed;
+
+                          const startMinReal = Math.max(0, minutesFromStart);
+                          const endMinReal = Math.min(DAY_MINUTES, startMinReal + duration);
+                          const topPositionPx = timelineDayLayout
+                            ? mapMinuteToDisplayY(timelineDayLayout.layout, startMinReal)
+                            : startMinReal;
+                          const endPositionPx = timelineDayLayout
+                            ? mapMinuteToDisplayY(timelineDayLayout.layout, endMinReal)
+                            : endMinReal;
+                          const heightPx = Math.max(
+                            isScheduleClosedCompact ? 28 : 50,
+                            endPositionPx - topPositionPx
+                          );
                           
                           const hasPassed = eventEnd.isBefore(now);
                           
@@ -1297,7 +1602,7 @@ const CalendarLocation = (props: CalendarLocationProps = {}) => {
                           return (
                             <div
                               key={event.id || index}
-                              className="timeline-event-item"
+                              className={`timeline-event-item${isScheduleClosedCompact ? " timeline-event-item--compact" : ""}`}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 if (event.isBlocked) {
@@ -1316,24 +1621,42 @@ const CalendarLocation = (props: CalendarLocationProps = {}) => {
                                 height: `${heightPx}px`,
                               }}
                             >
-                              <div className="timeline-event-content">
-                                {continuationMessage && (
-                                  <div className="timeline-event-continuation">
-                                    <span className="continuation-text">
-                                      {continuationMessage}
-                                    </span>
-                                  </div>
-                                )}
-                                <div className="timeline-event-main">
-                                  <span className="timeline-event-time">
-                                    {startTime} - {continuesToNextDay ? "23:59" : endTime}
+                              {isScheduleClosedCompact ? (
+                                <div className="timeline-event-compact-content">
+                                  <Clock className="w-3 h-3 flex-shrink-0" />
+                                  <span className="timeline-event-compact-time">
+                                    {startTime} <span className="timeline-event-compact-dots">···</span> {endTime}
                                   </span>
-                                  <span className="timeline-event-separator mr-1">, </span>
-                                  <span className="timeline-event-title">
-                                    {event.title || event.eventName || "Event"}
+                                  <span className="timeline-event-compact-title">
+                                    {event.title || "Închis"}
                                   </span>
                                 </div>
-                              </div>
+                              ) : (
+                                <div className="timeline-event-content">
+                                  {continuationMessage && (
+                                    <div className="timeline-event-continuation">
+                                      <span className="continuation-text">
+                                        {continuationMessage}
+                                      </span>
+                                    </div>
+                                  )}
+                                  <div className="timeline-event-main">
+                                    <span className="timeline-event-time">
+                                      {startTime} - {continuesToNextDay ? "23:59" : endTime}
+                                    </span>
+                                    <span className="timeline-event-separator mr-1">, </span>
+                                    <span className="timeline-event-title">
+                                      {event.title || event.eventName || "Event"}
+                                    </span>
+                                    {!event.isBlocked && !!event.guests && (
+                                      <span className="timeline-event-guests ml-2 inline-flex items-center gap-1">
+                                        <Users className="w-3 h-3" />
+                                        {event.guests}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           );
                         })}
@@ -1344,6 +1667,18 @@ const CalendarLocation = (props: CalendarLocationProps = {}) => {
           </Dialog.Panel>
         </div>
       </Dialog>
+
+      <CustomModal
+        open={isAvailabilityModalOpen}
+        onClose={async () => {
+          setIsAvailabilityModalOpen(false);
+          await fetchBookings(false);
+        }}
+        title="Reguli de disponibilitate"
+        className="relative bg-white dark:bg-gray-900 rounded-xl h-[90vh] w-full max-w-4xl flex flex-col overflow-hidden"
+      >
+        {locationId && <AvailabilitySettings slug={locationId} />}
+      </CustomModal>
     </div>
   );
 };

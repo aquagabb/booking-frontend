@@ -90,6 +90,24 @@
     "min_hours": "Ore minime",
     "min_guests": "Oaspeți minimi"
   },
+  "event_categories": {
+    "wedding": "Nuntă",
+    "birthday": "Zi de naștere",
+    "corporate": "Corporate",
+    "conference": "Conferință",
+    "private_party": "Petrecere privată",
+    "anniversary": "Aniversare",
+    "graduation": "Absolvire",
+    "baptism": "Botez",
+    "gala": "Gală",
+    "concert": "Concert",
+    "exhibition": "Expoziție",
+    "meeting": "Întâlnire",
+    "seminar": "Seminar",
+    "product_launch": "Lansare de produs",
+    "team_building": "Team building",
+    "other": "Altul"
+  },
   "bookings": {
     "location": "Locație",
     "category": "Tip eveniment",
@@ -174,6 +192,7 @@
     "expires_at": "Expiră la"
   },
   "common": {
+    "view_all": "Vezi toate",
     "cancel": "Anulează",
     "save": "Salvează",
     "saving": "Se salvează...",
@@ -300,6 +319,9 @@
     "marketing_emails_desc": "Primiți actualizări despre funcții noi și promoții",
     "notifications_update_success": "Preferințele de notificări au fost actualizate cu succes",
     "notifications_update_error": "Eroare la actualizarea preferințelor de notificări"
+  },
+  "dashboard": {
+    "upcoming_events": "Evenimente viitoare"
   },
   "features": {
     "air_conditioning": "Aer condiționat",

@@ -25,12 +25,23 @@ export interface Organization {
   updatedAt?: string;
 }
 
+export interface AdminMetricsLocation {
+  id: string;
+  slug: string;
+  name: string;
+  completion: number;
+}
+
 export interface AdminMetrics {
   totalProperties: number;
-  pendingBookings: number;
+  receivedBookings: number;
+  confirmedBookings: number;
+  confirmedbookingsPricetotal: number;
   upcomingBookings: number;
+  pendingBookings: number;
   unreadMessages: number;
   expiringHolds: number;
+  locations: AdminMetricsLocation[];
   lastUpdated?: string;
 }
 
@@ -50,10 +61,14 @@ interface AdminState {
 
 const initialMetrics: AdminMetrics = {
   totalProperties: 0,
-  pendingBookings: 0,
+  receivedBookings: 0,
+  confirmedBookings: 0,
+  confirmedbookingsPricetotal: 0,
   upcomingBookings: 0,
+  pendingBookings: 0,
   unreadMessages: 0,
   expiringHolds: 0,
+  locations: [],
 };
 
 export const useAdminStore = create<AdminState>()(
@@ -107,10 +122,14 @@ export const useAdminStore = create<AdminState>()(
           if (status === 200 && response) {
             get().setMetrics({
               totalProperties: response.totalProperties || 0,
-              pendingBookings: response.pendingBookings || 0,
+              receivedBookings: response.receivedBookings || 0,
+              confirmedBookings: response.confirmedBookings || 0,
+              confirmedbookingsPricetotal: response.confirmedbookingsPricetotal || 0,
               upcomingBookings: response.upcomingBookings || 0,
+              pendingBookings: response.pendingBookings || 0,
               unreadMessages: response.unreadMessages || 0,
               expiringHolds: response.expiringHolds || 0,
+              locations: response.locations || [],
             });
           }
         } catch (error) {
