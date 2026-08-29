@@ -1,4 +1,4 @@
-import CalendarLocation from "../../../../components/CalendarLocation";
+import CalendarLocation from "../../../../components/calendar/CalendarLocation";
 
 const Overview = () => {
     return (

@@ -15,6 +15,7 @@ interface CustomDatePickerProps {
   showTimeSelect?: boolean;
   dateFormat?: string;
   disablePastDates?: boolean;
+  dayClassName?: (date: Date) => string | undefined | null;
 }
 
 const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
@@ -30,6 +31,7 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   showTimeSelect = false,
   dateFormat,
   disablePastDates = true,
+  dayClassName,
 }) => {
   // Calculează minDate-ul final: dacă disablePastDates este true și nu există deja un minDate, folosește data de azi
   const getMinDate = (): Date | undefined => {
@@ -215,6 +217,30 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
           padding: 4px !important;
           font-size: 0.8rem;
         }
+        .react-datepicker__day.day-has-events {
+          position: relative;
+          background-color: rgba(245, 158, 11, 0.14);
+        }
+        .react-datepicker__day.day-has-events:hover {
+          background-color: rgba(245, 158, 11, 0.24);
+        }
+        .react-datepicker__day.day-has-events::after {
+          content: '';
+          position: absolute;
+          bottom: 3px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 4px;
+          height: 4px;
+          border-radius: 9999px;
+          background-color: var(--color-accent);
+        }
+        .react-datepicker__day.day-has-events.react-datepicker__day--selected {
+          background-color: #0ea5e9;
+        }
+        .react-datepicker__day.day-has-events.react-datepicker__day--selected::after {
+          background-color: white;
+        }
       `}</style>
       <DatePicker
         selected={selected}
@@ -232,6 +258,7 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
         openToDate={openToDate}
         wrapperClassName="w-full"
         customInput={<CustomInput />}
+        dayClassName={dayClassName}
         formatWeekDay={(dayName) => {
           const dayMap: { [key: string]: string } = {
             'Monday': 'lun.',

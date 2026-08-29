@@ -10,7 +10,7 @@ const AdminLayout = () => {
       <aside className="fixed top-16 left-0 h-[calc(100vh-64px)] w-64">
         <Sidebar />
       </aside>
-      <main className="ml-64 py-2 px-6 w-full">
+      <main className="ml-60 py-2 px-2 w-full">
         <Outlet />
       </main>
     </div>

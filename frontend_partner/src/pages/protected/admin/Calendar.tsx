@@ -1,6 +1,6 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { Calendar as CalendarIcon } from 'lucide-react';
-import CalendarLocation from '../../../components/CalendarLocation';
+import CalendarLocation from '../../../components/calendar/CalendarLocation';
 
 type TabType = 'calendar';
 
