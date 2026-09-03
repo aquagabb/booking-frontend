@@ -45,12 +45,6 @@ export const deleteBlockedDate = async (body: {
     return response;
 }
 
-export const getAvailabilityRules = async (locationId: number) => {
-    const response = await authRequest('GET', `/bookings/availability/rules?locationId=${locationId}`);
-    return response;
-}
-
-
 export const updateBooking = async (id, body) => {
     const response = await authRequest('PUT', `/bookings/${id}`, body);
     return response;

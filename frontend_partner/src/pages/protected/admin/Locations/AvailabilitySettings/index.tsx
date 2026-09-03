@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import type { AvailabilityConfig, RecurringBlock, RecurringRule, WeekdayIndex } from "./types";
-import { DEFAULT_GENERAL_RULES, WEEKDAY_LABELS } from "./types";
+import { DEFAULT_GENERAL_RULES } from "./types";
 import defaultRecurringSchedule from "./defaultRecurringSchedule.json";
 import RecurringSchedule from "./RecurringSchedule";
 import RecurringBlocks from "./RecurringBlocks";
 import GeneralRules from "./GeneralRules";
-import { getAvailabilityRules } from "../../../../../api/bookings/bookings";
+import { getAvailabilityRules } from "../../../../../api/locations/locations";
 
 const initialRecurringSchedule = defaultRecurringSchedule as RecurringRule[];
 
@@ -35,36 +35,46 @@ function apiDateToIsoDate(iso: string | null): string | null {
   return m ? m[1] : null;
 }
 
-function mapApiDaysToWeekdayIndexes(days: string[]): WeekdayIndex[] {
+/** API-ul folosește 1=Luni … 7=Duminică (ISO); intern folosim 0=Luni … 6=Duminică. */
+function mapApiDaysToWeekdayIndexes(days: number[]): WeekdayIndex[] {
   const out: WeekdayIndex[] = [];
   for (const d of days) {
-    const idx = WEEKDAY_LABELS.indexOf(d as (typeof WEEKDAY_LABELS)[number]);
+    const idx = d - 1;
     if (idx >= 0 && idx <= 6) out.push(idx as WeekdayIndex);
   }
   return out;
 }
 
+/** API-ul trimite ora ca `HH:mm:ss`; componentele de UI așteaptă `HH:mm`. */
+function apiTimeToHHmm(time: string): string {
+  return time.slice(0, 5);
+}
+
 type ApiAvailabilityItem = {
   id: number;
-  days: string[];
-  startTime: string;
-  endTime: string;
+  title: string;
+  description: string | null;
+  type: "schedule" | "block";
+  locationId: number;
   dateFrom: string | null;
   dateTo: string | null;
+  daysOfWeek: number[];
+  startTime: string;
+  endTime: string;
+  isDefault: boolean;
   enabled: boolean;
-  label: string;
 };
 
 function mapScheduleToRecurringRules(items: ApiAvailabilityItem[]): RecurringRule[] {
   return items.map((r) => ({
     id: String(r.id),
     enabled: r.enabled,
-    days: mapApiDaysToWeekdayIndexes(r.days),
-    startTime: r.startTime,
-    endTime: r.endTime,
+    days: mapApiDaysToWeekdayIndexes(r.daysOfWeek),
+    startTime: apiTimeToHHmm(r.startTime),
+    endTime: apiTimeToHHmm(r.endTime),
     dateFrom: apiDateToIsoDate(r.dateFrom),
     dateTo: apiDateToIsoDate(r.dateTo),
-    label: r.label,
+    label: r.title,
   }));
 }
 
@@ -73,12 +83,12 @@ function mapBlockedToRecurringBlocks(items: ApiAvailabilityItem[]): RecurringBlo
     id: String(r.id),
     enabled: r.enabled,
     recurrence: "weekly",
-    days: mapApiDaysToWeekdayIndexes(r.days),
-    startTime: r.startTime,
-    endTime: r.endTime,
+    days: mapApiDaysToWeekdayIndexes(r.daysOfWeek),
+    startTime: apiTimeToHHmm(r.startTime),
+    endTime: apiTimeToHHmm(r.endTime),
     dateFrom: apiDateToIsoDate(r.dateFrom),
     dateTo: apiDateToIsoDate(r.dateTo),
-    reason: r.label,
+    reason: r.title,
   }));
 }
 
@@ -109,13 +119,12 @@ const AvailabilitySettingsPage: React.FC<AvailabilitySettingsProps> = ({ slug })
         const { environment, response } = await getAvailabilityRules(locationId);
         if (cancelled) return;
         if (environment.status === 200 && response?.data) {
-          const d = response.data as {
-            schedule?: ApiAvailabilityItem[];
-            blocked?: ApiAvailabilityItem[];
-          };
+          const items = response.data as ApiAvailabilityItem[];
+          const scheduleItems = items.filter((r) => r.type !== "block");
+          const blockedItems = items.filter((r) => r.type === "block");
           setConfig({
-            recurringSchedule: mapScheduleToRecurringRules(d.schedule ?? []),
-            recurringBlocks: mapBlockedToRecurringBlocks(d.blocked ?? []),
+            recurringSchedule: mapScheduleToRecurringRules(scheduleItems),
+            recurringBlocks: mapBlockedToRecurringBlocks(blockedItems),
             generalRules: DEFAULT_GENERAL_RULES,
           });
         } else {

@@ -1,5 +1,6 @@
 
 import Login from '../pages/Login';
+import PublicCalendar from '../pages/PublicCalendar';
 
 import type { ReactElement } from 'react';
 import Dashboard from '../pages/protected/admin/Dashboard';
@@ -27,6 +28,7 @@ export type AppRoute = {
 
 export const publicRoutes: AppRoute[] = [
   { path: '/login', element: <Login /> },
+  { path: '/public-calendar/:locationId', element: <PublicCalendar /> },
 ];
 
 export const adminRoutes: AppRoute[] = [

@@ -3,7 +3,7 @@ import { BookingFormBun } from "../../../pages/protected/admin/Forms/BookingForm
 
 const NewBookingModal = ({ open, onClose, initialCheckIn, initialCheckOut }) => {
   return (
-    <CustomModal open={open} onClose={onClose} title="Create Booking">
+    <CustomModal open={open} onClose={onClose} title="Creează rezervare">
       <BookingFormBun slug="new" initialCheckIn={initialCheckIn} initialCheckOut={initialCheckOut} />
     </CustomModal>
   );

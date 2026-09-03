@@ -15,6 +15,10 @@ interface CustomTimePickerProps {
   autoFillEmptyOnMount?: boolean;
   /** Appends 23:59 (not on the 15-min grid) for end-of-day selection */
   include2359Option?: boolean;
+  /** Minute-of-day ranges (e.g. [{ start: 600, end: 720 }]) already taken by other events; shown greyed out but still selectable */
+  busyRanges?: { start: number; end: number }[];
+  /** When opening the list with no value selected yet, scroll to this time (e.g. the normal schedule start) instead of 00:00 */
+  preferredScrollTime?: string;
 }
 
 const CustomTimePicker: React.FC<CustomTimePickerProps> = ({
@@ -30,9 +34,12 @@ const CustomTimePicker: React.FC<CustomTimePickerProps> = ({
   maxTime,
   autoFillEmptyOnMount = true,
   include2359Option = false,
+  busyRanges = [],
+  preferredScrollTime,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const optionRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   // Helper function to compare times (HH:mm format)
   const compareTime = (time1: string, time2: string): number => {
@@ -43,14 +50,20 @@ const CustomTimePicker: React.FC<CustomTimePickerProps> = ({
     return total1 - total2;
   };
 
+  // A time is "busy" when it falls inside an existing event's range on that day
+  const isTimeBusy = (hour: number, minute: number): boolean => {
+    const totalMinutes = hour * 60 + minute;
+    return busyRanges.some((range) => totalMinutes >= range.start && totalMinutes < range.end);
+  };
+
   // Generate time options in 15-minute intervals
   const generateTimeOptions = () => {
-    const options: { value: string; label: string }[] = [];
-    
+    const options: { value: string; label: string; isBusy: boolean }[] = [];
+
     for (let hour = 0; hour < 24; hour++) {
       for (let minute = 0; minute < 60; minute += 15) {
         const time24 = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-        
+
         // Filter by minTime and maxTime
         if (minTime && compareTime(time24, minTime) < 0) {
           continue;
@@ -58,14 +71,14 @@ const CustomTimePicker: React.FC<CustomTimePickerProps> = ({
         if (maxTime && compareTime(time24, maxTime) > 0) {
           continue;
         }
-        
+
         const period = hour >= 12 ? 'PM' : 'AM';
         const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-        
+
         // Always format as HH:MM AM/PM
         const label = `${String(hour12).padStart(2, '0')}:${String(minute).padStart(2, '0')} ${period}`;
-        
-        options.push({ value: time24, label });
+
+        options.push({ value: time24, label, isBusy: isTimeBusy(hour, minute) });
       }
     }
 
@@ -76,7 +89,7 @@ const CustomTimePicker: React.FC<CustomTimePickerProps> = ({
       } else if (maxTime && compareTime(time24, maxTime) > 0) {
         // omit
       } else if (!options.some((o) => o.value === "23:59")) {
-        options.push({ value: "23:59", label: "11:59 PM" });
+        options.push({ value: "23:59", label: "11:59 PM", isBusy: isTimeBusy(23, 59) });
       }
     }
 
@@ -137,6 +150,18 @@ const CustomTimePicker: React.FC<CustomTimePickerProps> = ({
     };
   }, [isOpen]);
 
+  // When opening the list, jump to the selected value, or to preferredScrollTime if nothing is picked yet,
+  // instead of always showing the list from 00:00.
+  useEffect(() => {
+    if (!isOpen) return;
+    const targetValue = value || preferredScrollTime;
+    if (!targetValue) return;
+    const el = optionRefs.current[targetValue];
+    if (el) {
+      el.scrollIntoView({ block: 'center' });
+    }
+  }, [isOpen]);
+
   const handleSelect = (optionValue: string) => {
     onChange(optionValue);
     setIsOpen(false);
@@ -187,16 +212,22 @@ const CustomTimePicker: React.FC<CustomTimePickerProps> = ({
               {timeOptions.map((option) => (
                 <div
                   key={option.value}
+                  ref={(el) => { optionRefs.current[option.value] = el; }}
                   onClick={() => handleSelect(option.value)}
                   className={`
-                    px-4 py-2 text-sm rounded-lg cursor-pointer transition-colors my-0.5
+                    flex items-center justify-between px-4 py-2 text-sm rounded-lg cursor-pointer transition-colors my-0.5
                     ${value === option.value
                       ? 'bg-primary text-white font-semibold'
+                      : option.isBusy
+                      ? 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
                       : 'text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'
                     }
                   `}
                 >
-                  {option.label}
+                  <span>{option.label}</span>
+                  {option.isBusy && value !== option.value && (
+                    <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">Ocupat</span>
+                  )}
                 </div>
               ))}
             </div>

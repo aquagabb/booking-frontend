@@ -6,7 +6,7 @@ const BookingDetailsModal = ({ open, onClose, bookingId }) => {
     <CustomModal
       open={open}
       onClose={onClose}
-      title="Booking Details"
+      title="Detalii rezervare"
       className="relative bg-white rounded-xl h-[90vh] w-[75vw] flex flex-col overflow-hidden"
     >
       {bookingId && <Overview bookingId={bookingId} />}

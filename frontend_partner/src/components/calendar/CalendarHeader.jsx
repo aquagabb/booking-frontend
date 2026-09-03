@@ -29,7 +29,7 @@ const CalendarHeader = ({
             type="button"
             onClick={() => onNavigate("PREV")}
             className="calendar-nav-btn"
-            aria-label="Previous"
+            aria-label="Anterior"
           >
             <ChevronLeft className="w-4 h-4" strokeWidth={2} />
           </button>
@@ -38,13 +38,13 @@ const CalendarHeader = ({
             onClick={() => onNavigate("TODAY")}
             className="calendar-today-btn"
           >
-            Today
+            Astăzi
           </button>
           <button
             type="button"
             onClick={() => onNavigate("NEXT")}
             className="calendar-nav-btn"
-            aria-label="Next"
+            aria-label="Următor"
           >
             <ChevronRight className="w-4 h-4" strokeWidth={2} />
           </button>
@@ -64,7 +64,7 @@ const CalendarHeader = ({
                       if (option?.value) onPickerLocationChange(String(option.value));
                     }}
                     options={locationOptions}
-                    placeholder="Select location"
+                    placeholder="Selectează locația"
                     isSearchable={false}
                   />
                 </div>
@@ -87,7 +87,7 @@ const CalendarHeader = ({
               type="button"
               onClick={() => onView(Views.MONTH)}
               className={`calendar-view-btn ${view === Views.MONTH ? "active" : ""}`}
-              title="Month view"
+              title="Vizualizare lună"
             >
               Lună
             </button>
@@ -95,7 +95,7 @@ const CalendarHeader = ({
               type="button"
               onClick={() => onView(Views.WEEK)}
               className={`calendar-view-btn ${view === Views.WEEK ? "active" : ""}`}
-              title="Week view"
+              title="Vizualizare săptămână"
             >
               Săptămână
             </button>
@@ -103,7 +103,7 @@ const CalendarHeader = ({
               type="button"
               onClick={() => onView(Views.DAY)}
               className={`calendar-view-btn ${view === Views.DAY ? "active" : ""}`}
-              title="Day view"
+              title="Vizualizare zi"
             >
               Zi
             </button>
@@ -111,8 +111,8 @@ const CalendarHeader = ({
           <button
             onClick={onToggleFullscreen}
             className="calendar-maximize-btn"
-            aria-label={fullscreen ? "Minimize" : "Maximize"}
-            title={fullscreen ? "Exit fullscreen" : "Fullscreen"}
+            aria-label={fullscreen ? "Micșorează" : "Mărește"}
+            title={fullscreen ? "Ieși din ecran complet" : "Ecran complet"}
           >
             {fullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>

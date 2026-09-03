@@ -27,6 +27,25 @@ const eventBackgroundColor = (event) => {
   }
 };
 
+const calendarMessages = {
+  date: "Dată",
+  time: "Ora",
+  event: "Eveniment",
+  allDay: "Toată ziua",
+  week: "Săptămână",
+  work_week: "Săptămână lucrătoare",
+  day: "Zi",
+  month: "Lună",
+  previous: "Anterior",
+  next: "Următor",
+  yesterday: "Ieri",
+  tomorrow: "Mâine",
+  today: "Astăzi",
+  agenda: "Agendă",
+  noEventsInRange: "Nu există evenimente în acest interval.",
+  showMore: (total) => `+${total} în plus`,
+};
+
 const CalendarGrid = ({
   localizer,
   events,
@@ -65,6 +84,7 @@ const CalendarGrid = ({
         popup
         dayLayoutAlgorithm="no-overlap"
         onShowMore={onShowMore}
+        messages={calendarMessages}
         formats={{
           dayFormat: "D",
           weekdayFormat: (date, culture, fmtLocalizer) =>

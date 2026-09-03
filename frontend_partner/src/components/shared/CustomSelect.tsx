@@ -44,14 +44,16 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
       paddingLeft: iconLeft ? '2.5rem' : '1rem',
       paddingRight: iconRight ? '2.5rem' : '1rem',
       borderRadius: '0.5rem',
-      borderColor: error ? '#EF4444' : (state.isFocused ? '#0ea5e9' : '#D1D5DB'),
+      borderStyle: 'solid',
+      borderWidth: '1px',
+      borderColor: error ? '#EF4444' : (state.isFocused ? '#0ea5e9' : '#E5E7EB'),
       boxShadow: error
         ? '0 0 0 1px rgba(239, 68, 68, 0.8)'
         : (state.isFocused ? '0 0 0 2px rgba(14, 165, 233, 0.4)' : undefined),
       backgroundColor: '#ffffff',
       fontSize: '0.875rem',
       lineHeight: '1.25rem',
-      border: '1px solid',
+      outline: 'none',
       cursor: 'pointer',
       '&:hover': {
         borderColor: error ? '#EF4444' : '#0ea5e9',

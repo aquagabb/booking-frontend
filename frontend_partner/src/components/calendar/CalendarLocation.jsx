@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { momentLocalizer, Views } from "react-big-calendar";
 import moment from "moment";
+import "moment/locale/ro";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { Dialog } from "@headlessui/react";
 import "./CalendarLocation.css";
@@ -11,31 +12,24 @@ import {
   getBlockedDates,
   createBlockedDate,
   deleteBlockedDate,
-  getAvailabilityRules,
 } from "../../api/bookings/bookings";
+import { getAvailabilityRules } from "../../api/locations/locations";
 import {
   prepareRecurringBlockedRules,
   expandPreparedRecurringBlocksToEvents,
 } from "../calendarRecurringBlocks";
 import { prepareScheduleRules, expandScheduleClosedToTimelineEvents } from "../calendarScheduleClosed";
 import {
-  DAY_MINUTES,
-  TIMELINE_COMPACT_THRESHOLD_MIN,
   transformBookingToEvent,
   transformBlockedDateToEvent,
   busyIntervalsFromDayEvents,
   freeIntervalsFromBusy,
-  computeTimelineFreeSlotRange,
   minuteOfDayToHHmm,
   exclusiveEndMinuteToCheckOutHHmm,
-  buildTimelineDayLayout,
-  mapMinuteToDisplayY,
-  mapDisplayYToMinute,
   combineDateTime,
   getCurrentTimeRoundedForPicker,
   hhmmToMinutes,
   getScheduleOpenWindowForDay,
-  isTimeWithinScheduleWindow,
   formatEventTimeRange,
   formatMinuteRange,
 } from "./calendarHelpers";
@@ -48,7 +42,7 @@ import NewBookingModal from "./modals/NewBookingModal";
 import BookingDetailsModal from "./modals/BookingDetailsModal";
 import AvailabilityRulesModal from "./modals/AvailabilityRulesModal";
 
-moment.locale("en-gb");
+moment.locale("ro");
 const localizer = momentLocalizer(moment);
 
 const CalendarLocation = (props = {}) => {
@@ -72,7 +66,7 @@ const CalendarLocation = (props = {}) => {
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [fullscreen, setFullscreen] = useState(false);
-  const [currentLocation, setCurrentLocation] = useState("Location");
+  const [currentLocation, setCurrentLocation] = useState("Locație");
   const [events, setEvents] = useState([]);
   const [preparedRecurringBlockedRules, setPreparedRecurringBlockedRules] = useState([]);
   const [preparedScheduleRules, setPreparedScheduleRules] = useState([]);
@@ -121,47 +115,38 @@ const CalendarLocation = (props = {}) => {
     [events, recurringTimelineEvents, scheduleTimelineEvents]
   );
 
-  const openFreeSlotFromTimeline = useCallback(
-    (day, minuteY) => {
-      const dayEvents = getEventsForDate(day);
-      const busy = busyIntervalsFromDayEvents(day, dayEvents);
-      const free = freeIntervalsFromBusy(busy);
-      const range = computeTimelineFreeSlotRange(minuteY, free);
-      if (!range) return;
+  const openSlotActionForDay = useCallback(
+    (day, mode = "add") => {
+      const dayStart = moment(day).startOf("day").toDate();
+      const dayEnd = moment(day).startOf("day").hour(23).minute(59).second(0).millisecond(0).toDate();
+      const dayScheduleWindow = getScheduleOpenWindowForDay(dayStart, preparedScheduleRules);
+      const isToday = moment(day).isSame(moment(), "day");
+      const currentRoundedMinutes = hhmmToMinutes(getCurrentTimeRoundedForPicker());
+      const defaultStartMinutes = dayScheduleWindow
+        ? isToday
+          ? Math.max(currentRoundedMinutes, dayScheduleWindow.startMinutes)
+          : dayScheduleWindow.startMinutes
+        : isToday
+        ? currentRoundedMinutes
+        : 0;
 
-      const normalizedStart = moment(day).startOf("day").toDate();
-      const normalizedEnd = moment(day).startOf("day").hour(23).minute(59).second(0).millisecond(0).toDate();
-
-      setSelectedSlot({ start: normalizedStart, end: normalizedEnd, isSameDay: true });
+      setSelectedSlot({ start: dayStart, end: dayEnd, isSameDay: true });
       setSelectedEvent(null);
       setIsEditing(false);
-      setSlotActionMode("full");
-      setCheckInTime(minuteOfDayToHHmm(range.slotStart));
-      setCheckOutTime(exclusiveEndMinuteToCheckOutHHmm(range.slotEndExclusive));
+      setSlotActionMode(mode);
+      setCheckInTime(minuteOfDayToHHmm(defaultStartMinutes));
+      setCheckOutTime(
+        dayScheduleWindow ? exclusiveEndMinuteToCheckOutHHmm(dayScheduleWindow.endMinutes) : "23:59"
+      );
       setBlockReason("");
+      setIsTimelineModalOpen(false);
       setIsOpen(true);
     },
-    [getEventsForDate]
+    [preparedScheduleRules]
   );
 
-  /** Comprimă vizual intervalele lungi "în afara programului" din desfășurătorul zilei */
-  const timelineDayLayout = useMemo(() => {
-    if (!selectedDateForTimeline) return null;
-    const dayStart = moment(selectedDateForTimeline).startOf("day");
-    const dayEnd = moment(selectedDateForTimeline).endOf("day");
-
-    const compactRanges = getEventsForDate(selectedDateForTimeline)
-      .filter((event) => event.isScheduleClosed)
-      .map((event) => {
-        const start = Math.max(0, moment.max(moment(event.start), dayStart).diff(dayStart, "minutes"));
-        const end = Math.min(DAY_MINUTES, moment.min(moment(event.end), dayEnd).diff(dayStart, "minutes"));
-        return { start, end };
-      })
-      .filter((range) => range.end - range.start > TIMELINE_COMPACT_THRESHOLD_MIN)
-      .sort((a, b) => a.start - b.start);
-
-    return { layout: buildTimelineDayLayout(compactRanges), compactRanges };
-  }, [selectedDateForTimeline, getEventsForDate]);
+  const openAddEventForDay = useCallback((day) => openSlotActionForDay(day, "add"), [openSlotActionForDay]);
+  const openBlockDayForDay = useCallback((day) => openSlotActionForDay(day, "block"), [openSlotActionForDay]);
 
   const handleSelectSlot = ({ start, end }) => {
     const actualEnd = new Date(end);
@@ -172,7 +157,7 @@ const CalendarLocation = (props = {}) => {
     const isSameDay = startDateOnly.isSame(endDateOnly, "day");
 
     if (isSameDay) {
-      const dayEvents = getEventsForDate(start);
+      const dayEvents = getEventsForDate(start).filter((event) => !event.isScheduleClosed);
       if (dayEvents.length > 0) {
         setSelectedDateForTimeline(start);
         setIsTimelineModalOpen(true);
@@ -219,15 +204,6 @@ const CalendarLocation = (props = {}) => {
       return;
     }
 
-    if (!isTimeWithinScheduleWindow(checkInTime, scheduleWindowForSlotStart)) {
-      alert("Ora de început este în afara programului de disponibilitate.");
-      return;
-    }
-    if (!isTimeWithinScheduleWindow(checkOutTime, scheduleWindowForSlotEnd)) {
-      alert("Ora de sfârșit este în afara programului de disponibilitate.");
-      return;
-    }
-
     try {
       const startDate = combineDateTime(selectedSlot.start, checkInTime);
       const endDate = selectedSlot.isSameDay
@@ -263,43 +239,12 @@ const CalendarLocation = (props = {}) => {
   };
 
   const handleQuickAddEvent = () => {
-    const todayStart = moment().startOf("day").toDate();
-    const todayEnd = moment().startOf("day").hour(23).minute(59).second(0).millisecond(0).toDate();
-    const todayScheduleWindow = getScheduleOpenWindowForDay(todayStart, preparedScheduleRules);
-    const currentRoundedMinutes = hhmmToMinutes(getCurrentTimeRoundedForPicker());
-    const defaultStartMinutes = todayScheduleWindow
-      ? Math.max(currentRoundedMinutes, todayScheduleWindow.startMinutes)
-      : currentRoundedMinutes;
-
-    setSelectedSlot({ start: todayStart, end: todayEnd, isSameDay: true });
-    setSelectedEvent(null);
-    setIsEditing(false);
-    setSlotActionMode("add");
-    setCheckInTime(minuteOfDayToHHmm(defaultStartMinutes));
-    setCheckOutTime(
-      todayScheduleWindow ? exclusiveEndMinuteToCheckOutHHmm(todayScheduleWindow.endMinutes) : "23:59"
-    );
-    setBlockReason("");
-    setIsOpen(true);
+    openAddEventForDay(new Date());
   };
 
   const handleQuickBlockDay = () => {
     if (!locationId) return;
-
-    const todayStart = moment().startOf("day").toDate();
-    const todayEnd = moment().startOf("day").hour(23).minute(59).second(0).millisecond(0).toDate();
-    const todayScheduleWindow = getScheduleOpenWindowForDay(todayStart, preparedScheduleRules);
-
-    setSelectedSlot({ start: todayStart, end: todayEnd, isSameDay: true });
-    setSelectedEvent(null);
-    setIsEditing(false);
-    setSlotActionMode("block");
-    setCheckInTime(todayScheduleWindow ? minuteOfDayToHHmm(todayScheduleWindow.startMinutes) : "00:00");
-    setCheckOutTime(
-      todayScheduleWindow ? exclusiveEndMinuteToCheckOutHHmm(todayScheduleWindow.endMinutes) : "23:59"
-    );
-    setBlockReason("");
-    setIsOpen(true);
+    openBlockDayForDay(new Date());
   };
 
   const handleSlotStartDateChange = (date) => {
@@ -338,34 +283,25 @@ const CalendarLocation = (props = {}) => {
       )
     : undefined;
 
+  /** Ca admin nu ești limitat de programul de disponibilitate — acesta e doar afișat ca mențiune. */
   const getMinStartTimeForPicker = () => {
-    const bounds = [];
-    if (slotDateIsToday) bounds.push(hhmmToMinutes(getCurrentTimeRoundedForPicker()));
-    if (scheduleWindowForSlotStart) bounds.push(scheduleWindowForSlotStart.startMinutes);
-    if (!bounds.length) return undefined;
-    return minuteOfDayToHHmm(Math.max(...bounds));
+    if (!slotDateIsToday) return undefined;
+    return minuteOfDayToHHmm(hhmmToMinutes(getCurrentTimeRoundedForPicker()));
   };
 
-  const getMaxStartTimeForPicker = () => {
-    if (!scheduleWindowForSlotStart) return undefined;
-    return exclusiveEndMinuteToCheckOutHHmm(scheduleWindowForSlotStart.endMinutes);
-  };
+  const getMaxStartTimeForPicker = () => undefined;
 
   const getMinEndTimeForPicker = () => {
-    const bounds = [];
-    if (selectedSlot?.isSameDay && checkInTime) bounds.push(hhmmToMinutes(checkInTime) + 15);
-    if (scheduleWindowForSlotEnd) bounds.push(scheduleWindowForSlotEnd.startMinutes);
-    if (!bounds.length) return undefined;
-    return minuteOfDayToHHmm(Math.max(...bounds));
+    if (!(selectedSlot?.isSameDay && checkInTime)) return undefined;
+    return minuteOfDayToHHmm(hhmmToMinutes(checkInTime) + 15);
   };
 
-  const getMaxEndTimeForPicker = () => {
-    if (!scheduleWindowForSlotEnd) return undefined;
-    return exclusiveEndMinuteToCheckOutHHmm(scheduleWindowForSlotEnd.endMinutes);
-  };
+  const getMaxEndTimeForPicker = () => undefined;
 
-  const formatScheduleWindow = (window) =>
-    `${minuteOfDayToHHmm(window.startMinutes)} - ${exclusiveEndMinuteToCheckOutHHmm(window.endMinutes)}`;
+  const formatScheduleWindow = (window) => {
+    const range = `${minuteOfDayToHHmm(window.startMinutes)} - ${exclusiveEndMinuteToCheckOutHHmm(window.endMinutes)}`;
+    return window.label ? `${window.label}: ${range}` : `Program disponibil: ${range}`;
+  };
 
   const scheduleHint = (() => {
     if (!scheduleWindowForSlotStart && !scheduleWindowForSlotEnd) return null;
@@ -373,17 +309,33 @@ const CalendarLocation = (props = {}) => {
       scheduleWindowForSlotStart &&
       scheduleWindowForSlotEnd &&
       scheduleWindowForSlotStart.startMinutes === scheduleWindowForSlotEnd.startMinutes &&
-      scheduleWindowForSlotStart.endMinutes === scheduleWindowForSlotEnd.endMinutes
+      scheduleWindowForSlotStart.endMinutes === scheduleWindowForSlotEnd.endMinutes &&
+      scheduleWindowForSlotStart.label === scheduleWindowForSlotEnd.label
     ) {
-      return `Program disponibil: ${formatScheduleWindow(scheduleWindowForSlotStart)}`;
+      return formatScheduleWindow(scheduleWindowForSlotStart);
     }
     const parts = [];
-    if (scheduleWindowForSlotStart) parts.push(`ziua de început ${formatScheduleWindow(scheduleWindowForSlotStart)}`);
-    if (scheduleWindowForSlotEnd) parts.push(`ziua de sfârșit ${formatScheduleWindow(scheduleWindowForSlotEnd)}`);
-    return `Program disponibil: ${parts.join(", ")}`;
+    if (scheduleWindowForSlotStart) parts.push(`ziua de început — ${formatScheduleWindow(scheduleWindowForSlotStart)}`);
+    if (scheduleWindowForSlotEnd) parts.push(`ziua de sfârșit — ${formatScheduleWindow(scheduleWindowForSlotEnd)}`);
+    return parts.join(" · ");
   })();
 
+  const timelineScheduleWindow = selectedDateForTimeline
+    ? getScheduleOpenWindowForDay(selectedDateForTimeline, preparedScheduleRules)
+    : undefined;
+  const timelineScheduleHint = timelineScheduleWindow ? formatScheduleWindow(timelineScheduleWindow) : null;
+
   const dayHasEvents = (date) => getEventsForDate(date).some((event) => !event.isScheduleClosed);
+
+  /** Intervale (in minute de la miezul nopții) deja ocupate de alte evenimente în acea zi */
+  const getBusyMinuteRangesForDay = (day) => {
+    if (!day) return [];
+    const dayEvents = getEventsForDate(day).filter(
+      (event) => !event.isScheduleClosed && event.id !== selectedEvent?.id
+    );
+    if (!dayEvents.length) return [];
+    return busyIntervalsFromDayEvents(day, dayEvents);
+  };
 
   const buildDayAvailabilityPanel = (day, label) => {
     const dayEvents = getEventsForDate(day).filter((event) => !event.isScheduleClosed);
@@ -460,9 +412,9 @@ const CalendarLocation = (props = {}) => {
         ]);
 
         if (availabilityResult && availabilityResult.status === 200 && availabilityResult.response?.data) {
-          const data = availabilityResult.response.data;
-          setPreparedRecurringBlockedRules(prepareRecurringBlockedRules(data.blocked));
-          setPreparedScheduleRules(prepareScheduleRules(data.schedule));
+          const items = availabilityResult.response.data;
+          setPreparedRecurringBlockedRules(prepareRecurringBlockedRules(items));
+          setPreparedScheduleRules(prepareScheduleRules(items));
         } else {
           setPreparedRecurringBlockedRules([]);
           setPreparedScheduleRules([]);
@@ -510,7 +462,7 @@ const CalendarLocation = (props = {}) => {
             (loc) => loc.id === locationId || loc.id?.toString() === locationId
           );
           if (currentLoc) {
-            setCurrentLocation(currentLoc.name || "Location");
+            setCurrentLocation(currentLoc.name || "Locație");
           }
         }
       }
@@ -533,7 +485,7 @@ const CalendarLocation = (props = {}) => {
           const list = response.data.locations
             .map((loc) => ({
               id: loc.id != null ? String(loc.id) : "",
-              name: loc.name ?? "Location",
+              name: loc.name ?? "Locație",
             }))
             .filter((l) => l.id);
           setLocationsForPicker(list);
@@ -585,11 +537,11 @@ const CalendarLocation = (props = {}) => {
         setIsOpen(false);
         await fetchBookings(false);
       } else {
-        alert("Failed to unblock date. Please try again.");
+        alert("Deblocarea a eșuat. Încearcă din nou.");
       }
     } catch (error) {
       console.error("Error unblocking date:", error);
-      alert("Error unblocking date. Please try again.");
+      alert("Eroare la deblocarea datei. Încearcă din nou.");
     }
   };
 
@@ -597,9 +549,14 @@ const CalendarLocation = (props = {}) => {
   const showNoLocations = needsLocationPicker && pickerInitDone && locationsForPicker.length === 0;
 
   const today = new Date();
-  const todayEvents = getEventsForDate(today).sort(
-    (a, b) => moment(a.start).valueOf() - moment(b.start).valueOf()
-  );
+  const todayEvents = getEventsForDate(today)
+    .filter((event) => !event.isScheduleClosed)
+    .sort((a, b) => moment(a.start).valueOf() - moment(b.start).valueOf());
+
+  const todayScheduleWindow = getScheduleOpenWindowForDay(today, preparedScheduleRules);
+  const todayAvailabilityText = todayScheduleWindow
+    ? formatScheduleWindow(todayScheduleWindow)
+    : null;
 
   const calendarGridProps = {
     localizer,
@@ -631,15 +588,15 @@ const CalendarLocation = (props = {}) => {
           <div className="flex min-h-0 flex-1 flex-col pb-6">
             {showPickerLoading ? (
               <div className="flex h-full min-h-0 flex-1 items-center justify-center">
-                <p className="text-gray-500 dark:text-gray-400">Loading locations...</p>
+                <p className="text-gray-500 dark:text-gray-400">Se încarcă locațiile...</p>
               </div>
             ) : showNoLocations ? (
               <div className="flex h-full min-h-0 flex-1 items-center justify-center">
-                <p className="text-gray-500 dark:text-gray-400">No locations available.</p>
+                <p className="text-gray-500 dark:text-gray-400">Nu există locații disponibile.</p>
               </div>
             ) : loading ? (
               <div className="flex h-full min-h-0 flex-1 items-center justify-center">
-                <p className="text-gray-500 dark:text-gray-400">Loading bookings...</p>
+                <p className="text-gray-500 dark:text-gray-400">Se încarcă rezervările...</p>
               </div>
             ) : (
               <div className="flex min-h-0 flex-1 flex-col">
@@ -653,6 +610,7 @@ const CalendarLocation = (props = {}) => {
       <CalendarSidebar
         today={today}
         todayEvents={todayEvents}
+        todayAvailabilityText={todayAvailabilityText}
         onSelectEvent={handleSelectEvent}
         onQuickAddEvent={handleQuickAddEvent}
         onQuickBlockDay={handleQuickBlockDay}
@@ -683,6 +641,7 @@ const CalendarLocation = (props = {}) => {
               <CalendarSidebar
                 today={today}
                 todayEvents={todayEvents}
+                todayAvailabilityText={todayAvailabilityText}
                 onSelectEvent={handleSelectEvent}
                 onQuickAddEvent={handleQuickAddEvent}
                 onQuickBlockDay={handleQuickBlockDay}
@@ -717,20 +676,21 @@ const CalendarLocation = (props = {}) => {
         maxStartTime={getMaxStartTimeForPicker()}
         minEndTime={getMinEndTimeForPicker()}
         maxEndTime={getMaxEndTimeForPicker()}
+        checkInBusyRanges={selectedSlot ? getBusyMinuteRangesForDay(selectedSlot.start) : []}
+        checkOutBusyRanges={
+          selectedSlot
+            ? getBusyMinuteRangesForDay(selectedSlot.isSameDay ? selectedSlot.start : selectedSlot.end)
+            : []
+        }
+        preferredStartTime={
+          scheduleWindowForSlotStart ? minuteOfDayToHHmm(scheduleWindowForSlotStart.startMinutes) : undefined
+        }
         scheduleHint={scheduleHint}
         dayHasEvents={dayHasEvents}
         dayAvailabilityPanels={dayAvailabilityPanels}
         onAddBooking={() => {
           if (!selectedSlot || !checkInTime || !checkOutTime) {
             alert("Selectează atât ora de început, cât și ora de sfârșit.");
-            return;
-          }
-          if (!isTimeWithinScheduleWindow(checkInTime, scheduleWindowForSlotStart)) {
-            alert("Ora de început este în afara programului de disponibilitate.");
-            return;
-          }
-          if (!isTimeWithinScheduleWindow(checkOutTime, scheduleWindowForSlotEnd)) {
-            alert("Ora de sfârșit este în afara programului de disponibilitate.");
             return;
           }
           const startDateTime = combineDateTime(selectedSlot.start, checkInTime);
@@ -775,8 +735,7 @@ const CalendarLocation = (props = {}) => {
         }}
         date={selectedDateForTimeline}
         dayEvents={selectedDateForTimeline ? getEventsForDate(selectedDateForTimeline) : []}
-        timelineDayLayout={timelineDayLayout}
-        onOpenFreeSlot={openFreeSlotFromTimeline}
+        scheduleHint={timelineScheduleHint}
         onSelectBlockedEvent={(event) => {
           setSelectedEvent(event);
           setIsTimelineModalOpen(false);
@@ -787,9 +746,8 @@ const CalendarLocation = (props = {}) => {
           setIsTimelineModalOpen(false);
           setIsModalOpen(true);
         }}
-        mapMinuteToDisplayY={mapMinuteToDisplayY}
-        mapDisplayYToMinute={mapDisplayYToMinute}
-        DAY_MINUTES={DAY_MINUTES}
+        onAddEvent={openAddEventForDay}
+        onBlockDay={openBlockDayForDay}
       />
 
       <AvailabilityRulesModal

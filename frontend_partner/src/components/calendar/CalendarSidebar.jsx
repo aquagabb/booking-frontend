@@ -1,15 +1,36 @@
 import moment from "moment";
-import { Plus, Users, Settings } from "lucide-react";
+import { Plus, Users, Settings, Globe, Link2 } from "lucide-react";
 
 const CalendarSidebar = ({
   today,
   todayEvents,
+  todayAvailabilityText,
   onSelectEvent,
   onQuickAddEvent,
   onQuickBlockDay,
   onGoToAvailabilitySettings,
   locationId,
 }) => {
+  const publicCalendarUrl = locationId
+    ? `${window.location.origin}/public-calendar/${locationId}`
+    : null;
+
+  const handleViewPublicCalendar = () => {
+    if (!publicCalendarUrl) return;
+    window.open(publicCalendarUrl, "_blank", "noopener,noreferrer");
+  };
+
+  const handleExportCalendarLink = async () => {
+    if (!publicCalendarUrl) return;
+    try {
+      await navigator.clipboard.writeText(publicCalendarUrl);
+      alert("Link-ul calendarului public a fost copiat!");
+    } catch (error) {
+      console.error("Error copying public calendar link:", error);
+      alert(publicCalendarUrl);
+    }
+  };
+
   return (
     <div className="flex flex-col w-1/5 min-w-[240px] h-full min-h-0 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
       <div className="p-4 border-b border-gray-200 dark:border-gray-700">
@@ -19,6 +40,11 @@ const CalendarSidebar = ({
         <p className="text-lg font-semibold text-gray-900 dark:text-gray-100 mt-1 capitalize">
           {moment(today).format("D MMMM YYYY")}
         </p>
+        {todayAvailabilityText && (
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+           {todayAvailabilityText}
+          </p>
+        )}
       </div>
 
       <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-1 min-h-0 overflow-y-auto">
@@ -69,7 +95,7 @@ const CalendarSidebar = ({
             type="button"
             onClick={onQuickAddEvent}
             disabled={!locationId}
-            className="w-full flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn-primary w-full flex items-center justify-center gap-2 text-sm disabled:cursor-not-allowed"
           >
             <Plus className="w-4 h-4" />
             Adauga eveniment
@@ -92,6 +118,32 @@ const CalendarSidebar = ({
           >
             <Settings className="w-4 h-4" />
             Reguli de disponibilitate
+          </button>
+        </div>
+      </div>
+
+      <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
+          Calendar public
+        </p>
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={handleViewPublicCalendar}
+            disabled={!locationId}
+            className="w-full flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Globe className="w-4 h-4" />
+            Vezi calendar public
+          </button>
+          <button
+            type="button"
+            onClick={handleExportCalendarLink}
+            disabled={!locationId}
+            className="w-full flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Link2 className="w-4 h-4" />
+            Exporta calendar
           </button>
         </div>
       </div>

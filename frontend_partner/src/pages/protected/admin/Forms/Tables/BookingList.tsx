@@ -50,6 +50,7 @@ type Booking = {
 
 const columns = [
     "Code",
+    'Name',
     "Location",
     "Event Type",
     "Guests",
@@ -316,6 +317,7 @@ const TableData = ({ items, onEdit }: TableDataProps) => {
                         <td className="table-cell">
                             #{b.code}
                         </td>
+                        <td className="table-cell">{b.name}</td>
                         <td className="table-cell">{b.locationName}</td>
                         <td className="table-cell">{t(`bookings.event_type.${b.eventName}`, b.eventName)}</td>
                         <td className="table-cell">{b.guests}</td>

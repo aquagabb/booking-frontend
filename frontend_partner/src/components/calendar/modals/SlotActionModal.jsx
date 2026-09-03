@@ -1,5 +1,5 @@
 import { Dialog } from "@headlessui/react";
-import { AlertTriangle, CalendarIcon, Clock, X } from "lucide-react";
+import { AlertTriangle, CalendarIcon, Clock, Info, X } from "lucide-react";
 import CustomTextarea from "../../shared/CustomTextarea";
 import CustomTimePicker from "../../shared/CustomTimePicker";
 import CustomDatePicker from "../../shared/CustomDatePicker";
@@ -26,6 +26,9 @@ const SlotActionModal = ({
   maxStartTime,
   minEndTime,
   maxEndTime,
+  checkInBusyRanges,
+  checkOutBusyRanges,
+  preferredStartTime,
   scheduleHint,
   dayHasEvents,
   dayAvailabilityPanels = [],
@@ -55,6 +58,13 @@ const SlotActionModal = ({
               </button>
             </div>
 
+            {scheduleHint && (
+              <div className="flex items-start gap-2 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900 px-3 py-2.5">
+                <Info className="w-4 h-4 text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                <p className="text-sm font-medium text-blue-700 dark:text-blue-300">{scheduleHint}</p>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <CustomDatePicker
                 label="Data început"
@@ -80,10 +90,6 @@ const SlotActionModal = ({
                 <span className="inline-block w-2 h-2 rounded-full bg-accent flex-shrink-0" />
                 Zilele marcate au deja evenimente
               </p>
-            )}
-
-            {scheduleHint && (
-              <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{scheduleHint}</p>
             )}
 
             {dayAvailabilityPanels.map((panel, panelIndex) => (
@@ -125,6 +131,8 @@ const SlotActionModal = ({
                 maxTime={maxStartTime}
                 autoFillEmptyOnMount={false}
                 include2359Option
+                busyRanges={checkInBusyRanges}
+                preferredScrollTime={preferredStartTime}
               />
               <CustomTimePicker
                 label="ORA SFÂRȘIT"
@@ -136,6 +144,7 @@ const SlotActionModal = ({
                 maxTime={maxEndTime}
                 autoFillEmptyOnMount={false}
                 include2359Option
+                busyRanges={checkOutBusyRanges}
               />
               <div>
                 <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">

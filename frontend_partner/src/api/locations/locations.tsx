@@ -100,3 +100,8 @@ export const removeLocationFavorite = async (locationId) => {
     return response;
 }
 
+export const getAvailabilityRules = async (locationId: number) => {
+    const response = await authRequest('GET', `/locations/${locationId}/rules`);
+    return response;
+}
+

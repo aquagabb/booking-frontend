@@ -18,9 +18,10 @@ export const transformBookingToEvent = (booking) => {
   return {
     id: booking.id,
     code: booking.code,
-    eventName: booking.eventName || "Event",
+    name: booking.name || "",
+    eventName: booking.eventName || "Eveniment",
     location: booking.locationName || "",
-    type: booking.eventName || "Event",
+    type: booking.eventName || "Eveniment",
     guests: booking.guests || 0,
     customerName: booking.customerName || "",
     customerEmail: booking.customerEmail || "",
@@ -28,7 +29,7 @@ export const transformBookingToEvent = (booking) => {
     start: new Date(booking.checkIn),
     end: new Date(booking.checkOut),
     status: mapStatus(booking.status || "pending"),
-    title: `${booking.eventName || "Event"} - ${booking.customerName || ""}`,
+    title: booking.name || booking.customerName || booking.eventName || "Eveniment",
     isBlocked: false,
   };
 };
@@ -60,7 +61,7 @@ export const transformBlockedDateToEvent = (blockedDate) => {
 
   return {
     id: blockedDate.id || `blocked-${blockedDate.startDate}-${blockedDate.endDate}`,
-    title: blockedDate.reason || "Blocked",
+    title: blockedDate.reason || "Interval blocat",
     start: startDate,
     end: endDate,
     isBlocked: true,
@@ -262,7 +263,10 @@ export function getScheduleOpenWindowForDay(day, scheduleRules) {
 
   const dayMoment = moment(day);
   const dayStart = dayMoment.clone().startOf("day");
-  const segments = scheduleRules.flatMap((rule) => segmentsForTimedRuleOnCalendarDay(dayMoment, rule));
+  const contributingRules = scheduleRules.filter(
+    (rule) => segmentsForTimedRuleOnCalendarDay(dayMoment, rule).length > 0
+  );
+  const segments = contributingRules.flatMap((rule) => segmentsForTimedRuleOnCalendarDay(dayMoment, rule));
   if (!segments.length) return undefined;
 
   let startMinutes = DAY_MINUTES;
@@ -274,15 +278,9 @@ export function getScheduleOpenWindowForDay(day, scheduleRules) {
     if (e > endMinutes) endMinutes = e;
   });
 
-  return { startMinutes, endMinutes };
-}
+  const label = [...new Set(contributingRules.map((rule) => rule.label).filter(Boolean))].join(", ");
 
-/** window undefined = nerestricționat (fără reguli pentru ziua respectivă) */
-export function isTimeWithinScheduleWindow(hhmm, window) {
-  if (!window) return true;
-  const minutes = hhmmToMinutes(hhmm);
-  if (minutes === null) return false;
-  return minutes >= window.startMinutes && minutes <= window.endMinutes;
+  return { startMinutes, endMinutes, label };
 }
 
 export const formatEventTimeRange = (event) =>

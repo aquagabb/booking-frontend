@@ -37,7 +37,7 @@ const BlockedEventModal = ({ open, onClose, event, onUnblock }) => {
                   ? event.title || "Program"
                   : isRecurring
                     ? "Blocare recurentă (reguli disponibilitate)"
-                    : "Blocked Date"}
+                    : "Dată blocată"}
               </Dialog.Title>
               <button
                 onClick={onClose}
@@ -50,7 +50,7 @@ const BlockedEventModal = ({ open, onClose, event, onUnblock }) => {
 
           <div className="p-6">
             <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">Event Details</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">Detalii eveniment</h3>
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="w-5 h-5 flex items-center justify-center">
@@ -61,7 +61,7 @@ const BlockedEventModal = ({ open, onClose, event, onUnblock }) => {
                     )}
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Block Type</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Tip blocare</p>
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                       {isScheduleClosed
                         ? "Interval închis (nu e în orele de deschidere din program)"
@@ -158,7 +158,7 @@ const BlockedEventModal = ({ open, onClose, event, onUnblock }) => {
                   onClick={onUnblock}
                   className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
                 >
-                  Unblock
+                  Deblochează
                 </button>
               </div>
             )}

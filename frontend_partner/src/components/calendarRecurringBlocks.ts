@@ -1,14 +1,12 @@
 import moment, { type Moment } from "moment";
 
-/** Zile API: L = Luni … D = Duminică (aceeași convenție ca AvailabilitySettings) */
-const WEEKDAY_LABELS = ["L", "Ma", "Mi", "J", "V", "S", "D"] as const;
-
 export type ApiAvailabilityBlockedItem = {
   id: number;
   locationId?: number;
   type?: string;
-  label: string;
-  days: string[];
+  title: string;
+  /** ISO: 1 = Luni … 7 = Duminică */
+  daysOfWeek: number[];
   startTime: string;
   endTime: string;
   dateFrom: string | null;
@@ -37,13 +35,8 @@ function apiDateToIsoDate(iso: string | null): string | null {
   return m ? m[1] : null;
 }
 
-function mapDayLabelsToIsoWeekdays(days: string[]): number[] {
-  const out: number[] = [];
-  for (const d of days) {
-    const idx = WEEKDAY_LABELS.indexOf(d as (typeof WEEKDAY_LABELS)[number]);
-    if (idx >= 0) out.push(idx + 1);
-  }
-  return out;
+function normalizeIsoWeekdays(daysOfWeek: number[]): number[] {
+  return daysOfWeek.filter((d) => d >= 1 && d <= 7);
 }
 
 function parseTimeToMinutes(hhmm: string): number {
@@ -99,11 +92,11 @@ export function prepareRecurringBlockedRules(
 
       return {
         id: b.id,
-        label: b.label,
+        label: b.title,
         dateFrom: apiDateToIsoDate(b.dateFrom),
         dateTo: apiDateToIsoDate(b.dateTo),
         enabled: b.enabled,
-        isoWeekdays: mapDayLabelsToIsoWeekdays(b.days),
+        isoWeekdays: normalizeIsoWeekdays(b.daysOfWeek),
         startMinutes,
         endMinutes,
         spansMidnight,

@@ -15,15 +15,8 @@ function apiDateToIsoDate(iso: string | null): string | null {
   return m ? m[1] : null;
 }
 
-const WEEKDAY_LABELS = ["L", "Ma", "Mi", "J", "V", "S", "D"] as const;
-
-function mapDayLabelsToIsoWeekdays(days: string[]): number[] {
-  const out: number[] = [];
-  for (const d of days) {
-    const idx = WEEKDAY_LABELS.indexOf(d as (typeof WEEKDAY_LABELS)[number]);
-    if (idx >= 0) out.push(idx + 1);
-  }
-  return out;
+function normalizeIsoWeekdays(daysOfWeek: number[]): number[] {
+  return daysOfWeek.filter((d) => d >= 1 && d <= 7);
 }
 
 function parseTimeToMinutes(hhmm: string): number {
@@ -59,11 +52,11 @@ export function prepareScheduleRules(
 
       return {
         id: s.id,
-        label: s.label,
+        label: s.title,
         dateFrom: apiDateToIsoDate(s.dateFrom),
         dateTo: apiDateToIsoDate(s.dateTo),
         enabled: s.enabled,
-        isoWeekdays: mapDayLabelsToIsoWeekdays(s.days),
+        isoWeekdays: normalizeIsoWeekdays(s.daysOfWeek),
         startMinutes,
         endMinutes,
         spansMidnight,
