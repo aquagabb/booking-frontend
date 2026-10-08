@@ -55,6 +55,21 @@ export function formatDateRomanian(date: string | Date, withTime = false): strin
   return `${base}, ${time}`;
 }
 
+export function capitalize(value: string): string {
+  if (!value) return value;
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+/** Ex: "9 Martie 2026, ora 11:17 PM" — fără numele zilei, lună cu majusculă, oră AM/PM. */
+export function formatDateTimeRo(date: string | Date): string {
+  const d = new Date(date);
+  const day = d.getDate();
+  const month = capitalize(ROMANIAN_MONTHS[d.getMonth()]);
+  const year = d.getFullYear();
+  const time = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+  return `${day} ${month} ${year}, ora ${time}`;
+}
+
 export function formatRelativeTime(date: string | Date): { relative: string; full: string } {
   const now = new Date();
   const then = new Date(date);
@@ -164,6 +179,13 @@ export function getInitials(name?: string): string {
     .join('')
     .toUpperCase()
     .slice(0, 2);
+}
+
+/** Afișează valoarea, sau '-' dacă lipsește / e string gol. */
+export function withFallback(value?: string | number | null): string | number {
+  if (value === null || value === undefined) return '-';
+  if (typeof value === 'string' && value.trim() === '') return '-';
+  return value;
 }
 
 

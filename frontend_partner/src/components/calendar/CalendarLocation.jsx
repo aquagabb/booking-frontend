@@ -171,12 +171,25 @@ const CalendarLocation = (props = {}) => {
     const normalizedEnd = new Date(actualEnd);
     normalizedEnd.setHours(23, 59, 0, 0);
 
+    const dayScheduleWindow = getScheduleOpenWindowForDay(normalizedStart, preparedScheduleRules);
+    const isToday = moment(normalizedStart).isSame(moment(), "day");
+    const currentRoundedMinutes = hhmmToMinutes(getCurrentTimeRoundedForPicker());
+    const defaultStartMinutes = dayScheduleWindow
+      ? isToday
+        ? Math.max(currentRoundedMinutes, dayScheduleWindow.startMinutes)
+        : dayScheduleWindow.startMinutes
+      : isToday
+      ? currentRoundedMinutes
+      : 0;
+
     setSelectedSlot({ start: normalizedStart, end: normalizedEnd, isSameDay });
     setSelectedEvent(null);
     setIsEditing(false);
     setSlotActionMode("full");
-    setCheckInTime("00:00");
-    setCheckOutTime("23:59");
+    setCheckInTime(minuteOfDayToHHmm(defaultStartMinutes));
+    setCheckOutTime(
+      dayScheduleWindow ? exclusiveEndMinuteToCheckOutHHmm(dayScheduleWindow.endMinutes) : "23:59"
+    );
     setIsOpen(true);
   };
 

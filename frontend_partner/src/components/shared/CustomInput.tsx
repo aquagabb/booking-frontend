@@ -47,11 +47,23 @@ const CustomInput: React.FC<InputProps> = ({
           value={value}
           onChange={onChange}
           onFocus={onFocus}
+          onClick={(e) => {
+            // Pentru input-uri cu picker nativ (time, date etc.), deschide selectorul la click oriunde pe câmp,
+            // nu doar pe iconița nativă din dreapta.
+            const target = e.currentTarget;
+            if (typeof target.showPicker === 'function') {
+              try {
+                target.showPicker();
+              } catch {
+                // Tipul curent nu suportă showPicker (ex. text) - ignorăm.
+              }
+            }
+          }}
           placeholder={placeholder}
           disabled={disabled}
           className={`block w-full h-10 text-base md:text-sm px-4 py-3 border rounded-lg bg-white disabled:opacity-50
               ${error ? 'border-red-500' : 'border-gray-300'}
-              ${iconLeft ? 'pl-10' : ''} 
+              ${iconLeft ? 'pl-10' : ''}
               ${iconRight ? 'pr-10' : ''}`}
         />
         {iconRight && (

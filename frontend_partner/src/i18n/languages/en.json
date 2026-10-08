@@ -200,10 +200,11 @@
     "confirmed": "Confirmed",
     "cancelled": "Cancelled",
     "completed": "Completed",
+    "rejected": "Rejected",
     "expired": "Expired",
     "update_success": "Booking updated successfully",
     "notes": {
-      "title": "Notes",
+      "title": "Notes & Requirements",
       "add_note": "Add Note",
       "placeholder": "Add a note about this reservation...",
       "save": "Save",

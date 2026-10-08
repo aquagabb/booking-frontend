@@ -191,8 +191,9 @@ const Attachements: React.FC<AttachmentsProps> = ({ bookingId }) => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-base font-semibold text-gray-900 mb-4">Attachments</h2>
+      <div className="mb-4">
+        <h2 className="text-base font-semibold text-gray-900">Atașamente</h2>
+        <p className="text-xs text-gray-500 mt-0.5">Documente și fișiere asociate rezervării</p>
       </div>
 
       {attachmentMessage && (
@@ -266,7 +267,7 @@ const Attachements: React.FC<AttachmentsProps> = ({ bookingId }) => {
           {attachments.map((attachment) => (
             <div
               key={attachment.id}
-              className="group flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors"
+              className="group flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-[var(--color-gray)] hover:bg-gray-100 transition-colors"
             >
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <div className="flex-1 min-w-0">

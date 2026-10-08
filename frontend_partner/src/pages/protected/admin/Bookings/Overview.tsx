@@ -9,9 +9,13 @@ import {
   MoreVertical,
   Trash2,
   Edit2,
-  Calendar
+  Calendar,
+  Download,
+  CreditCard,
+  Eye
 } from 'lucide-react';
 import { getBookingById, getBookingMetadata, getBookingNotes, updateBookingStatus, getBookingPayments, createAdvancePayment, deleteAdvancePayment } from '../../../../api/bookings/bookings';
+import { getGeneralData } from '../../../../api/others/others';
 import clsx from 'clsx';
 import ReservationDetails from './ReservationDetails';
 import ClientDetails from './ClientDetails';
@@ -19,6 +23,8 @@ import Notes from './Notes';
 import ConfirmModal from '../../../../components/shared/Modals/ConfirmModal';
 import CustomModal from '../../../../components/shared/Modals/CustomModal';
 import { BookingFormBun } from '../Forms/BookingFormBun';
+import { openBookingPreview } from './BookingPreview';
+import { useAdminStore } from '../../../../store/admin.store';
 
 import type { PricingItem } from '../../../../types/pricing';
 import type {
@@ -50,6 +56,16 @@ function durationDaysBooking(checkIn: string, checkOut: string): number {
   if (diffMs <= 0) return 0;
   return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 }
+
+function formatReminderSchedule(date: string): string {
+  return `Programat pentru ${formatDateTimeRo(date)}`;
+}
+
+const editingSectionLabels: Record<'reservation' | 'client' | 'price', string> = {
+  reservation: 'rezervare',
+  client: 'client',
+  price: 'preț',
+};
 
 function currencySymbolFromCode(currency: string): string {
   const c = (currency || 'EUR').toUpperCase();
@@ -162,7 +178,7 @@ function buildPricingBreakdown(
 
   return null;
 }
-import { formatDate } from '../../../../lib/utils';
+import { formatDate, formatDateTimeRo } from '../../../../lib/utils';
 import Attachements from './Attachements';
 import CustomInput from '../../../../components/shared/CustomInput';
 import CustomDatePicker from '../../../../components/shared/CustomDatePicker';
@@ -171,6 +187,7 @@ import CustomTextarea from '../../../../components/shared/CustomTextarea';
 type MetadataResponse = {
   categories: Array<{ id: string; name: string }>;
   locations: Array<{ id: string; name: string }>;
+  seatingPlans: Array<{ id: string | number; name: string }>;
 };
 
 const Overview = ({ bookingId }: OverviewProps) => {
@@ -181,6 +198,7 @@ const Overview = ({ bookingId }: OverviewProps) => {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showRejectPendingModal, setShowRejectPendingModal] = useState(false);
   const [editingBookingSlug, setEditingBookingSlug] = useState<string | null>(null);
+  const [editingSection, setEditingSection] = useState<'reservation' | 'client' | 'price'>('reservation');
   const [advancePayments, setAdvancePayments] = useState<AdvancePayment[]>([]);
   const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState<string>('');
@@ -189,13 +207,19 @@ const Overview = ({ bookingId }: OverviewProps) => {
   const [addingPayment, setAddingPayment] = useState(false);
   const [showDeletePaymentModal, setShowDeletePaymentModal] = useState(false);
   const [paymentToDelete, setPaymentToDelete] = useState<number | null>(null);
+  const { organization } = useAdminStore();
 
   const fetchMetadataOptions = useCallback(async (): Promise<MetadataResponse | undefined> => {
-    const { status, response } = await getBookingMetadata();
+    const [{ status, response }, { status: generalStatus, response: generalResponse }] = await Promise.all([
+      getBookingMetadata(),
+      getGeneralData(),
+    ]);
+
     if (status === 200 && response?.data) {
       return {
         categories: response.data.categories,
         locations: response.data.locations,
+        seatingPlans: generalStatus === 200 ? (generalResponse?.data?.seatingPlans ?? []) : [],
       };
     }
     return undefined;
@@ -217,13 +241,16 @@ const Overview = ({ bookingId }: OverviewProps) => {
         const reservationData = response.data;
 
         const location = metadata?.locations.find(
-          (loc) => loc.id === reservationData.locationId
+          (loc) => String(loc.id) === String(reservationData.locationId)
         );
         const category = metadata?.categories.find(
-          (cat) => cat.id === reservationData.categoryId
+          (cat) => String(cat.id) === String(reservationData.categoryId)
+        );
+        const seatingPlan = metadata?.seatingPlans.find(
+          (plan) => String(plan.id) === String(reservationData.seatingPlan)
         );
 
-        // Fetch notes
+        // Preia notițele
         let notes = [];
         try {
           const notesResponse = await getBookingNotes(bookingId);
@@ -231,10 +258,10 @@ const Overview = ({ bookingId }: OverviewProps) => {
             notes = notesResponse.response.data;
           }
         } catch (error) {
-          console.error('Error fetching notes:', error);
+          console.error('Eroare la preluarea notițelor:', error);
         }
 
-        // Fetch advance payments
+        // Preia plățile în avans
         let payments: AdvancePayment[] = [];
         try {
           const paymentsResponse = await getBookingPayments(bookingId);
@@ -242,7 +269,7 @@ const Overview = ({ bookingId }: OverviewProps) => {
             payments = paymentsResponse.response.data;
           }
         } catch (error) {
-          console.error('Error fetching advance payments:', error);
+          console.error('Eroare la preluarea plăților în avans:', error);
         }
 
         const raw = reservationData as {
@@ -259,6 +286,7 @@ const Overview = ({ bookingId }: OverviewProps) => {
         const reservationDetails: BookingDetails = {
           ...reservationData,
           additionalInfo,
+          name: reservationData.name ?? undefined,
           locationName: location?.name ?? reservationData.locationName ?? '',
           eventName: category?.name ?? reservationData.eventName ?? '',
           basePrice: reservationData.basePrice ?? 0,
@@ -274,13 +302,14 @@ const Overview = ({ bookingId }: OverviewProps) => {
           advancePayments: payments,
           pricing: raw.pricing ?? undefined,
           bookingType: raw.bookingType,
+          seatingPlanName: seatingPlan?.name,
         };
 
         setReservation(reservationDetails);
         setAdvancePayments(payments);
       }
     } catch (error) {
-      console.error('Error fetching reservation:', error);
+      console.error('Eroare la preluarea rezervării:', error);
     } finally {
       setLoading(false);
     }
@@ -305,7 +334,7 @@ const Overview = ({ bookingId }: OverviewProps) => {
         setReservation((prev) => (prev ? { ...prev, status: newStatus } : null));
       }
     } catch (error) {
-      console.error('Error updating status:', error);
+      console.error('Eroare la actualizarea statusului:', error);
     } finally {
       setProcessing(false);
     }
@@ -347,11 +376,14 @@ const Overview = ({ bookingId }: OverviewProps) => {
     }, 0);
   }, [advancePayments]);
 
-  const remainingAmount = useMemo(() => {
+  const totalAmount = useMemo(() => {
     if (!reservation) return 0;
-    const total = parseInt(reservation.totalPrice.toString()) + parseInt(notesTotal.toString());
-    return Math.max(0, total - totalAdvancePayments);
-  }, [reservation, notesTotal, totalAdvancePayments]);
+    return parseInt(reservation.totalPrice.toString()) + parseInt(notesTotal.toString());
+  }, [reservation, notesTotal]);
+
+  const remainingAmount = useMemo(() => {
+    return Math.max(0, totalAmount - totalAdvancePayments);
+  }, [totalAmount, totalAdvancePayments]);
 
   const daysUntilEvent = useMemo(() => {
     if (!reservation?.checkIn) return null;
@@ -365,15 +397,13 @@ const Overview = ({ bookingId }: OverviewProps) => {
   }, [reservation?.checkIn]);
 
   const showReminder = useMemo(() => {
-    return (
-      reservation?.status === 'confirmed' &&
-      daysUntilEvent !== null &&
-      daysUntilEvent >= 0 &&
-      daysUntilEvent <= 7
-    );
-  }, [reservation?.status, daysUntilEvent]);
+    if (reservation?.status !== 'confirmed' || !reservation?.checkIn) return false;
+    if (daysUntilEvent === null || daysUntilEvent < 0 || daysUntilEvent > 7) return false;
+    // Nu mai afișăm reminder-ul dacă ora de check-in a trecut deja (chiar dacă e tot ziua curentă)
+    return new Date(reservation.checkIn).getTime() > Date.now();
+  }, [reservation?.status, reservation?.checkIn, daysUntilEvent]);
 
-  /** Single deadline for pending confirmation: API `expiresAt` first, then fallbacks. */
+  /** Termenul limită pentru confirmarea în așteptare: întâi `expiresAt` din API, apoi alternative. */
   const pendingConfirmationDeadline = useMemo((): string | null => {
     if (!reservation || reservation.status !== 'pending') return null;
     const raw =
@@ -392,9 +422,10 @@ const Overview = ({ bookingId }: OverviewProps) => {
     reservation?.createdAt,
   ]);
 
-  const handleEdit = useCallback(() => {
+  const handleEdit = useCallback((section: 'reservation' | 'client' | 'price' = 'reservation') => {
     if (reservation) {
       setDropdownOpen(false);
+      setEditingSection(section);
       setEditingBookingSlug(`${reservation.id}-${reservation.code}`);
     }
   }, [reservation]);
@@ -452,7 +483,7 @@ const Overview = ({ bookingId }: OverviewProps) => {
         setPaymentNotes('');
       }
     } catch (error) {
-      console.error('Error adding payment:', error);
+      console.error('Eroare la adăugarea plății:', error);
       alert('Eroare la adăugarea plății');
     } finally {
       setAddingPayment(false);
@@ -478,7 +509,7 @@ const Overview = ({ bookingId }: OverviewProps) => {
         setPaymentToDelete(null);
       }
     } catch (error) {
-      console.error('Error deleting payment:', error);
+      console.error('Eroare la ștergerea plății:', error);
       alert('Eroare la ștergerea plății');
       setShowDeletePaymentModal(false);
       setPaymentToDelete(null);
@@ -528,7 +559,7 @@ const Overview = ({ bookingId }: OverviewProps) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-gray-500">Loading reservation details...</p>
+        <p className="text-gray-500">Se încarcă detaliile rezervării...</p>
       </div>
     );
   }
@@ -536,7 +567,7 @@ const Overview = ({ bookingId }: OverviewProps) => {
   if (!reservation) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-gray-500">Reservation not found</p>
+        <p className="text-gray-500">Rezervarea nu a fost găsită</p>
       </div>
     );
   }
@@ -587,121 +618,219 @@ const Overview = ({ bookingId }: OverviewProps) => {
       )}
                 
       {showReminder && daysUntilEvent !== null && (
-        <div className={clsx(
-          "rounded-xl border-2 p-4 flex items-center gap-3",
-          daysUntilEvent === 0
-            ? "bg-red-50 border-red-200"
-            : daysUntilEvent <= 3
-              ? "bg-orange-50 border-orange-200"
-              : "bg-yellow-50 border-yellow-200"
-        )}>
-          <AlertTriangle className={clsx(
-            "w-5 h-5 flex-shrink-0",
-            daysUntilEvent === 0 ? "text-red-600" : daysUntilEvent <= 3 ? "text-orange-600" : "text-yellow-600"
-          )} />
-          <div className="flex-1">
-            <p className={clsx(
-              "font-semibold text-sm",
-              daysUntilEvent === 0 ? "text-red-900" : daysUntilEvent <= 3 ? "text-orange-900" : "text-yellow-900"
-            )}>
-              {daysUntilEvent === 0
-                ? "Event is today!"
-                : daysUntilEvent === 1
-                  ? "Event is tomorrow"
-                  : `Event in ${daysUntilEvent} days`}
-            </p>
-            <p className={clsx(
-              "text-sm mt-0.5",
-              daysUntilEvent === 0 ? "text-red-700" : daysUntilEvent <= 3 ? "text-orange-700" : "text-yellow-700"
-            )}>
-              {formatDate(reservation.checkIn)}
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-start gap-3">
+          <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center">
+            <AlertTriangle className="w-4 h-4" aria-hidden />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="font-semibold text-sm text-gray-900">
+                {daysUntilEvent === 0
+                  ? "Eveniment astăzi"
+                  : daysUntilEvent === 1
+                    ? "Eveniment mâine"
+                    : `Eveniment în ${daysUntilEvent} zile`}
+              </p>
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                Apropiat
+              </span>
+            </div>
+            <p className="text-xs text-amber-700 mt-0.5">
+              {formatReminderSchedule(reservation.checkIn)}
             </p>
           </div>
         </div>
       )}
 
+      {/* Card antet rezervare */}
+      <div className="bg-white rounded-xl border border-[var(--color-gray)] p-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 min-w-0 space-y-3">
+
+            <div className="flex flex-col gap-0.5">
+              {reservation.name && (
+                <h1 className="text-lg font-bold text-gray-900">
+                  {reservation.name}
+                </h1>
+              )}
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm text-gray-500">
+                  Rezervare #{reservation.code}
+                </p>
+                {statusConfig && (
+                  <div
+                    className={clsx(
+                      "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-sm font-medium",
+                      statusConfig.bg,
+                      statusConfig.text
+                    )}
+                  >
+                    <StatusIcon className="w-3.5 h-3.5" />
+                    {reservation.status.charAt(0).toUpperCase() + reservation.status.slice(1)}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap divide-x divide-[var(--color-gray)]">
+              <div className="pr-4">
+                <p className="flex items-center gap-1.5 text-xs text-gray-500 mb-1">
+                  <CreditCard className="w-3.5 h-3.5 text-primary" />
+                  Total
+                </p>
+                <p className="text-sm font-semibold text-gray-900">
+                  {totalAmount.toLocaleString()} {bookingCurrencySymbol}
+                </p>
+              </div>
+
+              {/* Sursa rezervării */}
+              {reservation.bookingSource && (
+                <div className="pl-4">
+                  <p className="flex items-center gap-1.5 text-xs text-gray-500 mb-1">
+                    {reservation.bookingSource === 'website' ? (
+                      <Globe className="w-3.5 h-3.5 text-primary" />
+                    ) : (
+                      <Building2 className="w-3.5 h-3.5 text-primary" />
+                    )}
+                    Sursă
+                  </p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {reservation.bookingSource === 'website' ? 'Rezervare făcută online' : 'Internă'}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* {reservation.bookingSource === 'website' &&
+             reservation.unreadMessages &&
+             reservation.unreadMessages > 0 && (
+              <div
+                onClick={handleNavigateToMessages}
+                className="bg-blue-50 rounded-lg p-4 flex items-center gap-4 cursor-pointer hover:bg-blue-100 transition-colors"
+              >
+                <div className="flex-shrink-0 w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
+                  <MessageCircle className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-blue-900 font-semibold text-sm">
+                    {reservation.unreadMessages} mesaj{reservation.unreadMessages !== 1 ? 'e' : ''} necitit{reservation.unreadMessages !== 1 ? 'e' : ''}
+                  </p>
+                  <p className="text-blue-700 text-xs mt-0.5">
+                    Apasă aici pentru a răspunde la întrebările clientului.
+                  </p>
+                </div>
+
+              </div>
+            )} */}
+          </div>
+
+          {/* Butoane de acțiune */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {reservation.status === 'confirmed' && (
+            <div className="relative flex-shrink-0">
+              <button
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                aria-label="Mai multe opțiuni"
+              >
+                <MoreVertical className="w-5 h-5 text-gray-600" />
+              </button>
+              {dropdownOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setDropdownOpen(false)}
+                  />
+                  <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg border border-[var(--color-gray)] z-20">
+                    <button
+                      onClick={() => {
+                        setDropdownOpen(false);
+                        openBookingPreview({
+                          booking: reservation,
+                          totalAmount,
+                          remainingAmount,
+                          totalAdvancePayments,
+                          bookingCurrencySymbol,
+                          advancePayments,
+                          organizationName: organization?.companyName,
+                        });
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-primary hover:bg-primary/10 flex items-center gap-2 rounded-t-lg transition-colors"
+                    >
+                      <Eye className="w-4 h-4" />
+                      Preview
+                    </button>
+                    <button
+                      onClick={() => handleEdit('reservation')}
+                      className="w-full px-4 py-2 text-left text-sm text-primary hover:bg-primary/10 flex items-center gap-2 transition-colors"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                      Editează
+                    </button>
+                    <button
+                      className="w-full px-4 py-2 text-left text-sm text-primary hover:bg-primary/10 flex items-center gap-2 transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                      Descarcă PDF
+                    </button>
+                    <button
+                      onClick={handleCancel}
+                      disabled={processing}
+                      className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 rounded-b-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Anulează
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         <div className="lg:col-span-2 space-y-6">
-          <div className="pr-6 border-r border-gray-200">
-            <div className="flex items-start justify-between mb-6">
-              <div className="flex-1 space-y-3">
+          {/* Card detalii rezervare */}
+          <div className="bg-white rounded-xl border border-[var(--color-gray)] p-4">
+            <ReservationDetails item={reservation} onEdit={() => handleEdit('reservation')} />
+          </div>
 
-                <div className="flex items-center gap-3">
-                  <h1 className="text-base font-bold text-gray-900">
-                    Booking #{reservation.code}
-                  </h1>
-                </div>
+          {/* Card informații client */}
+          <div className="bg-white rounded-xl border border-[var(--color-gray)] p-4">
+            <ClientDetails item={reservation} onEdit={() => handleEdit('client')} />
+          </div>
 
-                <div className="flex flex-wrap items-center gap-4 text-sm">
-
-                  {statusConfig && (
-                    <div
-                      className={clsx(
-                        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-sm font-medium",
-                        statusConfig.bg,
-                        statusConfig.text
-                      )}
-                    >
-                      <StatusIcon className="w-3.5 h-3.5" />
-                      {reservation.status.charAt(0).toUpperCase() + reservation.status.slice(1)}
-                    </div>
-                  )}
-
-                  {/* Booking Source */}
-                  {reservation.bookingSource && (
-                    <div className="flex items-center gap-1.5 text-gray-600">
-                      {reservation.bookingSource === 'website' ? (
-                        <>
-                          <Globe className="w-4 h-4 text-gray-400" />
-                          <span className="text-sm">Website</span>
-                        </>
-                      ) : (
-                        <>
-                          <Building2 className="w-4 h-4 text-gray-400" />
-                          <span className="text-sm">Internal</span>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* {reservation.bookingSource === 'website' && 
-                 reservation.unreadMessages && 
-                 reservation.unreadMessages > 0 && (
-                  <div
-                    onClick={handleNavigateToMessages}
-                    className="bg-blue-50 rounded-lg p-4 flex items-center gap-4 cursor-pointer hover:bg-blue-100 transition-colors"
+          {/* Card sumar preț */}
+          <div className="bg-white rounded-xl border border-[var(--color-gray)] p-4">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-base font-semibold text-gray-900">
+                  3. Sumar preț
+                </h2>
+                <p className="text-xs text-gray-500 mt-0.5">Calcul detaliat costuri contractuale și servicii adiționale</p>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button
+                  onClick={() => handleEdit('price')}
+                  className="btn-outline flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm"
+                >
+                  <Edit2 className="w-4 h-4" />
+                  Editare
+                </button>
+                {(reservation.status === 'confirmed' || reservation.status === 'completed') && (
+                  <button
+                    onClick={() => setShowAddPaymentModal(true)}
+                    className="btn-outline px-3 py-1.5 rounded-lg text-sm"
                   >
-                    <div className="flex-shrink-0 w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-                      <MessageCircle className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-blue-900 font-semibold text-sm">
-                        {reservation.unreadMessages} unread message{reservation.unreadMessages !== 1 ? 's' : ''}
-                      </p>
-                      <p className="text-blue-700 text-xs mt-0.5">
-                        Click here to respond to the guest's inquiries.
-                      </p>
-                    </div>
-      
-                  </div>
-                )} */}
-
-                <div className='border-b border-gray-200 my-4'></div>
-                <div className="">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-base font-semibold text-gray-900">
-                      Pricing Summary
-                    </h2>
-                 {(reservation.status === 'confirmed' || reservation.status === 'completed') &&    <button
-                      onClick={() => setShowAddPaymentModal(true)}
-                      className="btn-outline "
-                    >
-                      Adaugă plată in avans
-                    </button>}
-                  </div>
-                  <div className="space-y-3">
+                    Adaugă plată in avans
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="space-y-3">
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0 space-y-0.5">
                         <p className="text-sm text-gray-600">Preț de bază</p>
@@ -740,7 +869,7 @@ const Overview = ({ bookingId }: OverviewProps) => {
 
                     {notesTotal > 0 && (
                       <div className="flex items-center justify-between">
-                        <p className="text-sm text-gray-600">Notes Adjustments</p>
+                        <p className="text-sm text-gray-600">Ajustări din notițe</p>
                         <p className="text-sm font-medium text-gray-900">
                           {notesTotal.toLocaleString()} {bookingCurrencySymbol}
                         </p>
@@ -749,7 +878,7 @@ const Overview = ({ bookingId }: OverviewProps) => {
 
                     {totalAdvancePayments > 0 && (
                       <>
-                        <div className="border-t border-gray-200 pt-3 mt-3">
+                        <div className="border-t border-[var(--color-gray)] pt-3 mt-3">
                           <div className="flex items-center justify-between mb-2">
                             <p className="text-sm font-semibold text-gray-900">Plăți în avans</p>
                           </div>
@@ -789,16 +918,16 @@ const Overview = ({ bookingId }: OverviewProps) => {
                       </>
                     )}
 
-                    <div className="border-t border-gray-200 pt-3 mt-3">
+                    <div className="border-t border-[var(--color-gray)] pt-3 mt-3">
                       <div className="flex items-center justify-between">
                         <p className="text-sm font-semibold text-gray-900">Total</p>
                         <p className="text-sm font-bold text-gray-900">
-                          {(parseInt(reservation.totalPrice.toString()) + parseInt(notesTotal.toString())).toLocaleString()}{' '}
+                          {totalAmount.toLocaleString()}{' '}
                           {bookingCurrencySymbol}
                         </p>
                       </div>
                       {totalAdvancePayments > 0 && (
-                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-200">
+                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-[var(--color-gray)]">
                           <p className="text-sm font-semibold text-gray-900">Rămas de plată</p>
                           <p className={`text-sm font-bold ${remainingAmount === 0 ? 'text-green-600' : 'text-red-600'}`}>
                             {remainingAmount.toLocaleString()} lei
@@ -807,86 +936,37 @@ const Overview = ({ bookingId }: OverviewProps) => {
                       )}
                     </div>
                   </div>
-                </div>
-
-                <div className='border-b border-gray-200 my-4'></div>
-                <ReservationDetails item={reservation} />
-                <div className='border-b border-gray-200 my-4'></div>
-                <ClientDetails item={reservation} />
-                <div className='border-b border-gray-200 my-4'></div>
-
-
-                {bookingId && <Attachements bookingId={bookingId} />}
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-col items-end gap-3">
-                {/* Dropdown Menu for Confirmed Status */}
-                {reservation.status === 'confirmed' && (
-                  <div className="relative">
-                    <button
-                      onClick={() => setDropdownOpen(!dropdownOpen)}
-                      className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                      aria-label="More options"
-                    >
-                      <MoreVertical className="w-5 h-5 text-gray-600" />
-                    </button>
-                    {dropdownOpen && (
-                      <>
-                        <div
-                          className="fixed inset-0 z-10"
-                          onClick={() => setDropdownOpen(false)}
-                        />
-                        <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
-                          <button
-                            onClick={handleEdit}
-                            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 rounded-t-lg transition-colors"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                            Edit
-                          </button>
-                          <button
-                            onClick={handleCancel}
-                            disabled={processing}
-                            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 rounded-b-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            Cancel
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
 
+          {/* Card atașamente */}
+          {bookingId && (
+            <div className="bg-white rounded-xl border border-[var(--color-gray)] p-4">
+              <Attachements bookingId={bookingId} />
+            </div>
+          )}
         </div>
 
         <div className="space-y-6">
-
-
-          <Notes bookingId={bookingId} onNotesChange={fetchReservation} />
-
-
-          {/* Pricing Summary */}
-
+          {/* Card notițe și cerințe */}
+          <div className="bg-white rounded-xl border border-[var(--color-gray)] p-4">
+            <Notes bookingId={bookingId} onNotesChange={fetchReservation} />
+          </div>
         </div>
       </div>
 
-      {/* Edit Booking Modal */}
+      {/* Modal de editare a rezervării */}
       <CustomModal
         open={!!editingBookingSlug}
         onClose={() => {
           setEditingBookingSlug(null);
         }}
-        title={`Edit Booking - #${editingBookingSlug?.split("-")[1]}`}
+        title={`Editare ${editingSectionLabels[editingSection]} - #${editingBookingSlug?.split("-")[1]}`}
       >
         {editingBookingSlug && (
           <BookingFormBun
             slug={editingBookingSlug}
             isTitleHidden={true}
+            section={editingSection}
             onSuccess={() => {
               fetchReservation();
               setEditingBookingSlug(null);
@@ -895,18 +975,18 @@ const Overview = ({ bookingId }: OverviewProps) => {
         )}
       </CustomModal>
 
-      {/* Cancel Confirmation Modal */}
+      {/* Modal de confirmare anulare */}
       <ConfirmModal
         isOpen={showCancelModal}
-        title="Cancel Booking"
-        text="Are you sure you want to cancel this booking? This action cannot be undone."
-        cancelText="No, keep it"
-        confirmText="Yes, cancel"
+        title="Anulare rezervare"
+        text="Sigur doriți să anulați această rezervare? Această acțiune nu poate fi anulată."
+        cancelText="Nu, păstreaz-o"
+        confirmText="Da, anulează"
         onClose={() => setShowCancelModal(false)}
         onConfirm={confirmCancel}
       />
 
-      {/* Reject pending booking confirmation */}
+      {/* Modal de confirmare respingere rezervare în așteptare */}
       <ConfirmModal
         isOpen={showRejectPendingModal}
         title="Respinge rezervarea"
@@ -917,7 +997,7 @@ const Overview = ({ bookingId }: OverviewProps) => {
         onConfirm={confirmRejectPending}
       />
 
-      {/* Delete Payment Confirmation Modal */}
+      {/* Modal de confirmare ștergere plată */}
       <ConfirmModal
         isOpen={showDeletePaymentModal}
         title="Șterge plată în avans"
@@ -931,7 +1011,7 @@ const Overview = ({ bookingId }: OverviewProps) => {
         onConfirm={handleDeletePaymentConfirm}
       />
 
-      {/* Add Advance Payment Modal */}
+      {/* Modal adăugare plată în avans */}
       <CustomModal
         open={showAddPaymentModal}
         onClose={() => {
@@ -943,7 +1023,7 @@ const Overview = ({ bookingId }: OverviewProps) => {
         title="Adaugă plată în avans"
         className="relative bg-white rounded-xl w-full max-w-md flex flex-col overflow-hidden"
       >
-        <div className="p-6 space-y-4">
+        <div className="p-4 space-y-4">
           <CustomInput
             label={`Sumă (${bookingCurrencySymbol})`}
             type="number"
@@ -978,14 +1058,14 @@ const Overview = ({ bookingId }: OverviewProps) => {
                 setPaymentDate(new Date());
                 setPaymentNotes('');
               }}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+              className="btn-outline-transparent flex-1 px-4 py-2 rounded-lg transition-colors text-sm font-medium"
             >
               Anulează
             </button>
             <button
               onClick={handleAddPayment}
               disabled={addingPayment || !paymentAmount || !paymentDate}
-              className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+              className="btn-primary flex-1 px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
             >
               {addingPayment ? 'Se adaugă...' : 'Adaugă'}
             </button>

@@ -54,6 +54,7 @@ export type ServiceAddon = {
 export type BookingDetails = {
   id: string;
   code: string;
+  name?: string;
   locationName: string;
   eventName: string;
   customerName: string;
@@ -83,6 +84,10 @@ export type BookingDetails = {
   pricing?: PricingItem | PricingItem[] | null;
   /** For `per_time` mode: whether hourly or daily rate applies */
   bookingType?: BookingPricingTimeVariant | 'guest';
+  /** Id-ul planului de așezare ales (din catalogul general de seating plans). */
+  seatingPlan?: number;
+  /** Numele planului de așezare, rezolvat din catalogul general (ex. "boardroom"). */
+  seatingPlanName?: string;
 };
 
 // Component Props Types
@@ -92,6 +97,7 @@ export type OverviewProps = {
 
 export type ReservationDetailsProps = {
   item: {
+    code: string;
     locationName: string;
     eventName: string;
     checkIn: string;
@@ -99,7 +105,10 @@ export type ReservationDetailsProps = {
     guests: number;
     additionalInfo?: string;
     createdAt?: string;
+    bookingSource?: BookingSource;
+    seatingPlanName?: string;
   };
+  onEdit?: () => void;
 };
 
 export type ClientDetailsProps = {
@@ -108,6 +117,7 @@ export type ClientDetailsProps = {
     customerEmail: string;
     customerPhone?: string;
   };
+  onEdit?: () => void;
 };
 
 export type ServicesProps = {

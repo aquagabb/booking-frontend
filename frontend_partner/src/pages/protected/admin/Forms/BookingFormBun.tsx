@@ -5,6 +5,7 @@ import CustomTextarea from "../../../../components/shared/CustomTextarea";
 import CustomDatePicker from "../../../../components/shared/CustomDatePicker";
 import { useTranslation } from "react-i18next";
 import { createBooking, getBookingById, getBookingMetadata, updateBooking } from "../../../../api/bookings/bookings";
+import { getGeneralData } from "../../../../api/others/others";
 import CustomSelect from "../../../../components/shared/CustomSelect";
 import { toSelectOptions } from "../../../../lib/utils";
 import { Clock } from "lucide-react";
@@ -16,6 +17,7 @@ type FormValues = {
   code: string;
   categoryId: number;
   locationId: number;
+  seatingPlan: number;
   status: string;
   guests: number;
   totalPrice: number;
@@ -27,15 +29,22 @@ type FormValues = {
   additionalInfo: string;
 };
 
+type BookingFormSection = "reservation" | "client" | "price";
+
 type BookingFormBunProps = {
   slug: string;
   isTitleHidden?: boolean;
   initialCheckIn?: string;
   initialCheckOut?: string;
   onSuccess?: () => void;
+  /** Când e setat, formularul afișează doar câmpurile zonei respective (folosit la editarea individuală dintr-un modal). */
+  section?: BookingFormSection;
 };
 
-export const BookingFormBun: React.FC<BookingFormBunProps> = ({ slug, isTitleHidden = false, initialCheckIn, initialCheckOut, onSuccess }) => {
+export const BookingFormBun: React.FC<BookingFormBunProps> = ({ slug, isTitleHidden = false, initialCheckIn, initialCheckOut, onSuccess, section }) => {
+  const showReservation = !section || section === "reservation";
+  const showClient = !section || section === "client";
+  const showPrice = !section || section === "price";
   const {
     handleSubmit,
     control,
@@ -48,6 +57,7 @@ export const BookingFormBun: React.FC<BookingFormBunProps> = ({ slug, isTitleHid
       name: "",
       categoryId: 0,
       locationId: 0,
+      seatingPlan: 0,
       status: "pending",
       guests: 0,
       totalPrice: 0,
@@ -100,6 +110,15 @@ export const BookingFormBun: React.FC<BookingFormBunProps> = ({ slug, isTitleHid
 
   const { t } = useTranslation();
 
+  const statusOptions: SelectOption[] = [
+    { value: "pending", label: t("bookings.pending") },
+    { value: "confirmed", label: t("bookings.confirmed") },
+    { value: "completed", label: t("bookings.completed") },
+    { value: "cancelled", label: t("bookings.cancelled") },
+    { value: "rejected", label: t("bookings.rejected") },
+    { value: "expired", label: t("bookings.expired") },
+  ];
+
   let bookingId: number | null = null;
   if (slug && slug !== "new") {
     const firstPart = slug.split("-")[0];
@@ -110,9 +129,10 @@ export const BookingFormBun: React.FC<BookingFormBunProps> = ({ slug, isTitleHid
   }
 
   const [bookingData, setBookingData] = useState<any>({});
-  const [options, setOptions] = useState<{ categories: SelectOption[]; locations: SelectOption[] }>({
+  const [options, setOptions] = useState<{ categories: SelectOption[]; locations: SelectOption[]; seatingPlans: SelectOption[] }>({
     categories: [],
-    locations: []
+    locations: [],
+    seatingPlans: []
   })
 
   const isEditMode = Boolean(bookingId);
@@ -138,7 +158,7 @@ export const BookingFormBun: React.FC<BookingFormBunProps> = ({ slug, isTitleHid
     const checkIn = new Date(data.checkIn);
     const checkOut = new Date(data.checkOut);
     if (checkOut <= checkIn) {
-      setFeedback({ type: "error", message: "Check-out must be after check-in" });
+      setFeedback({ type: "error", message: "Data de check-out trebuie să fie după data de check-in" });
       return;
     }
 
@@ -177,6 +197,7 @@ export const BookingFormBun: React.FC<BookingFormBunProps> = ({ slug, isTitleHid
         name: b.name || "",
         categoryId: b.categoryId || 0,
         locationId: b.locationId || 0,
+        seatingPlan: b.seatingPlan || 0,
         status: b.status || "pending",
         guests: b.guests || 0,
         totalPrice: b.totalPrice || 0,
@@ -202,23 +223,28 @@ export const BookingFormBun: React.FC<BookingFormBunProps> = ({ slug, isTitleHid
 
       if (b?.metadata_options?.categories || b?.metadata_options?.locations) {
         setOptions((prevOptions) => ({
-          categories: b?.metadata_options?.categories 
-            ? toSelectOptions(b.metadata_options.categories) 
+          categories: b?.metadata_options?.categories
+            ? toSelectOptions(b.metadata_options.categories)
             : prevOptions.categories,
-          locations: b?.metadata_options?.locations 
-            ? toSelectOptions(b.metadata_options.locations) 
+          locations: b?.metadata_options?.locations
+            ? toSelectOptions(b.metadata_options.locations)
             : prevOptions.locations,
+          seatingPlans: prevOptions.seatingPlans,
         }));
       }
     }
   };
 
   const fetchMetadataOptions = async () => {
-    const { status, response } = await getBookingMetadata();
+    const [{ status, response }, { status: generalStatus, response: generalResponse }] = await Promise.all([
+      getBookingMetadata(),
+      getGeneralData(),
+    ]);
     if (status === 200 && response?.data) {
       setOptions({
         categories: toSelectOptions(response.data.categories),
         locations: toSelectOptions(response.data.locations),
+        seatingPlans: generalStatus === 200 ? toSelectOptions(generalResponse?.data?.seatingPlans ?? []) : [],
       });
     }
   };
@@ -265,7 +291,7 @@ export const BookingFormBun: React.FC<BookingFormBunProps> = ({ slug, isTitleHid
       {isEditMode && !isTitleHidden && (
         <div className="mb-4">
           <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-            Edit Booking -   #{bookingData.code}
+            Editare rezervare - #{bookingData.code}
           </h2>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           
@@ -278,269 +304,301 @@ export const BookingFormBun: React.FC<BookingFormBunProps> = ({ slug, isTitleHid
         onSubmit={handleSubmit(onSubmit)}
         noValidate
         id="booking-form"
-        className="flex-1 overflow-y-auto space-y-4 p-2"
+        className="flex-1 overflow-y-auto space-y-6 p-2"
       >
-        {/* 0. Name */}
-        <Controller
-          name="name"
-          control={control}
-          render={({ field }) => (
-            <CustomInput
-              label="Name"
-              value={field.value}
-              onChange={field.onChange}
-              error={errors.name?.message as string}
-            />
-          )}
-        />
-
-        {/* 1. Locatie & Event */}
-        <div>
-          <Controller
-            name="locationId"
-            control={control}
-            rules={{
-              required: t("common.required") as string,
-              validate: (v) =>
-                (v && Number(v) > 0) || (t("common.required") as string),
-            }}
-            render={({ field }) => (
-              <CustomSelect
-                label={t("bookings.location")}
-                options={options.locations}
-                value={options.locations.filter((o) => field.value === o.value)}
-                onChange={(option: any) => field.onChange(option?.value ?? 0)}
-                required
-                error={errors.locationId?.message as string}
-              />
-            )}
-          />
-        </div>
-
-        <div>
-          <Controller
-            name="categoryId"
-            control={control}
-            rules={{
-              required: t("common.required") as string,
-              validate: (v) =>
-                (v && Number(v) > 0) || (t("common.required") as string),
-            }}
-            render={({ field }) => (
-              <CustomSelect
-                label={t("bookings.category")}
-                options={options.categories}
-                value={options.categories.filter((o) => field.value === o.value)}
-                onChange={(option: any) => field.onChange(option?.value ?? 0)}
-                required
-                error={errors.categoryId?.message as string}
-              />
-            )}
-          />
-        </div>
-
-        {/* 2. Check-in & Check-out - Split Date and Time */}
+        {/* Zona 1. Detalii rezervare / eveniment */}
+        {showReservation && (
         <div className="space-y-4">
+          {!section && <h2 className="text-base font-semibold text-gray-900">1. Detalii Rezervare</h2>}
+
           <Controller
-            name="checkIn"
+            name="name"
             control={control}
-            rules={{ 
-              required: t("common.required") as string,
-              validate: () => {
-                if (!checkInDate || !checkInTime) {
-                  return t("common.required") as string;
-                }
-                return true;
-              }
-            }}
-            render={() => (
-              <div>
-                <label className="block text-sm font-semibold text-gray-dark mb-2">
-                  Check In <span className="text-red-600">*</span>
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <CustomDatePicker
-                    label=""
-                    selected={checkInDate}
-                    onChange={(date) => {
-                      setCheckInDate(date);
-                      // If check-out is before new check-in, update it
-                      if (date && checkOutDate && date > checkOutDate) {
-                        const newCheckOut = new Date(date);
-                        newCheckOut.setHours(date.getHours() + 1);
-                        setCheckOutDate(newCheckOut);
-                      }
-                    }}
-                    showTimeSelect={false}
-                    minDate={new Date()}
-                    dateFormat="dd/MM/yyyy"
-                    required
-                  />
-                  <CustomInput
-                    label=""
-                    type="time"
-                    value={checkInTime}
-                    onChange={(e) => setCheckInTime(e.target.value)}
-                    iconLeft={<Clock className="w-4 h-4 text-gray-400" />}
-                    required
-                  />
-                </div>
-                {errors.checkIn && (
-                  <p className="text-sm text-red-500 mt-1">{errors.checkIn.message}</p>
-                )}
-              </div>
+            render={({ field }) => (
+              <CustomInput
+                label="Nume rezervare"
+                value={field.value}
+                onChange={field.onChange}
+                error={errors.name?.message as string}
+              />
             )}
           />
 
           <Controller
-            name="checkOut"
+            name="status"
             control={control}
-            rules={{ 
-              required: t("common.required") as string,
-              validate: () => {
-                if (!checkOutDate || !checkOutTime) {
-                  return t("common.required") as string;
-                }
-                if (checkInDate && checkOutDate && checkInTime && checkOutTime) {
-                  const checkIn = combineDateTime(checkInDate, checkInTime);
-                  const checkOut = combineDateTime(checkOutDate, checkOutTime);
-                  if (new Date(checkOut) <= new Date(checkIn)) {
-                    return "Check-out must be after check-in";
+            render={({ field }) => (
+              <CustomSelect
+                label="Status"
+                options={statusOptions}
+                value={statusOptions.filter((o) => field.value === o.value)}
+                onChange={(option: any) => field.onChange(option?.value ?? "pending")}
+              />
+            )}
+          />
+
+          <div>
+            <Controller
+              name="locationId"
+              control={control}
+              rules={{
+                required: t("common.required") as string,
+                validate: (v) =>
+                  (v && Number(v) > 0) || (t("common.required") as string),
+              }}
+              render={({ field }) => (
+                <CustomSelect
+                  label={t("bookings.location")}
+                  options={options.locations}
+                  value={options.locations.filter((o) => field.value === o.value)}
+                  onChange={(option: any) => field.onChange(option?.value ?? 0)}
+                  required
+                  error={errors.locationId?.message as string}
+                />
+              )}
+            />
+          </div>
+
+          <div>
+            <Controller
+              name="categoryId"
+              control={control}
+              rules={{
+                required: t("common.required") as string,
+                validate: (v) =>
+                  (v && Number(v) > 0) || (t("common.required") as string),
+              }}
+              render={({ field }) => (
+                <CustomSelect
+                  label={t("bookings.category")}
+                  options={options.categories}
+                  value={options.categories.filter((o) => field.value === o.value)}
+                  onChange={(option: any) => field.onChange(option?.value ?? 0)}
+                  required
+                  error={errors.categoryId?.message as string}
+                />
+              )}
+            />
+          </div>
+
+          <div>
+            <Controller
+              name="seatingPlan"
+              control={control}
+              render={({ field }) => (
+                <CustomSelect
+                  label="Tip așezare"
+                  options={options.seatingPlans}
+                  value={options.seatingPlans.filter((o) => field.value === o.value)}
+                  onChange={(option: any) => field.onChange(option?.value ?? 0)}
+                  error={errors.seatingPlan?.message as string}
+                />
+              )}
+            />
+          </div>
+
+          {/* Check-in & Check-out - Split Date and Time */}
+          <div className="space-y-4">
+            <Controller
+              name="checkIn"
+              control={control}
+              rules={{
+                required: t("common.required") as string,
+                validate: () => {
+                  if (!checkInDate || !checkInTime) {
+                    return t("common.required") as string;
                   }
+                  return true;
                 }
-                return true;
-              }
-            }}
-            render={() => (
-              <div>
-                <label className="block text-sm font-semibold text-gray-dark mb-2">
-                  Check Out <span className="text-red-600">*</span>
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <CustomDatePicker
-                    label=""
-                    selected={checkOutDate}
-                    onChange={(date) => setCheckOutDate(date)}
-                    showTimeSelect={false}
-                    minDate={checkInDate || new Date()}
-                    dateFormat="dd/MM/yyyy"
-                    required
-                  />
-                  <CustomInput
-                    label=""
-                    type="time"
-                    value={checkOutTime}
-                    onChange={(e) => setCheckOutTime(e.target.value)}
-                    iconLeft={<Clock className="w-4 h-4 text-gray-400" />}
-                    required
-                  />
+              }}
+              render={() => (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-dark mb-2">
+                    Check-in <span className="text-red-600">*</span>
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <CustomDatePicker
+                      label=""
+                      selected={checkInDate}
+                      onChange={(date) => {
+                        setCheckInDate(date);
+                        // If check-out is before new check-in, update it
+                        if (date && checkOutDate && date > checkOutDate) {
+                          const newCheckOut = new Date(date);
+                          newCheckOut.setHours(date.getHours() + 1);
+                          setCheckOutDate(newCheckOut);
+                        }
+                      }}
+                      showTimeSelect={false}
+                      minDate={new Date()}
+                      dateFormat="dd/MM/yyyy"
+                      required
+                    />
+                    <CustomInput
+                      label=""
+                      type="time"
+                      value={checkInTime}
+                      onChange={(e) => setCheckInTime(e.target.value)}
+                      iconLeft={<Clock className="w-4 h-4 text-gray-400" />}
+                      required
+                    />
+                  </div>
+                  {errors.checkIn && (
+                    <p className="text-sm text-red-500 mt-1">{errors.checkIn.message}</p>
+                  )}
                 </div>
-                {errors.checkOut && (
-                  <p className="text-sm text-red-500 mt-1">{errors.checkOut.message}</p>
-                )}
-              </div>
+              )}
+            />
+
+            <Controller
+              name="checkOut"
+              control={control}
+              rules={{
+                required: t("common.required") as string,
+                validate: () => {
+                  if (!checkOutDate || !checkOutTime) {
+                    return t("common.required") as string;
+                  }
+                  if (checkInDate && checkOutDate && checkInTime && checkOutTime) {
+                    const checkIn = combineDateTime(checkInDate, checkInTime);
+                    const checkOut = combineDateTime(checkOutDate, checkOutTime);
+                    if (new Date(checkOut) <= new Date(checkIn)) {
+                      return "Data de check-out trebuie să fie după data de check-in";
+                    }
+                  }
+                  return true;
+                }
+              }}
+              render={() => (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-dark mb-2">
+                    Check-out <span className="text-red-600">*</span>
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <CustomDatePicker
+                      label=""
+                      selected={checkOutDate}
+                      onChange={(date) => setCheckOutDate(date)}
+                      showTimeSelect={false}
+                      minDate={checkInDate || new Date()}
+                      dateFormat="dd/MM/yyyy"
+                      required
+                    />
+                    <CustomInput
+                      label=""
+                      type="time"
+                      value={checkOutTime}
+                      onChange={(e) => setCheckOutTime(e.target.value)}
+                      iconLeft={<Clock className="w-4 h-4 text-gray-400" />}
+                      required
+                    />
+                  </div>
+                  {errors.checkOut && (
+                    <p className="text-sm text-red-500 mt-1">{errors.checkOut.message}</p>
+                  )}
+                </div>
+              )}
+            />
+          </div>
+
+          <Controller
+            name="guests"
+            control={control}
+            rules={{
+              required: t("common.required") as string,
+              min: { value: 1, message: t("common.required") as string },
+            }}
+            render={({ field }) => (
+              <CustomInput
+                label="Număr oaspeți"
+                type="number"
+                value={field.value}
+                onChange={(e) => field.onChange(Number(e.target.value))}
+                required
+                error={errors.guests?.message as string}
+              />
+            )}
+          />
+
+          <Controller
+            name="additionalInfo"
+            control={control}
+            render={({ field }) => (
+              <CustomTextarea
+                label="Informații suplimentare / Observații"
+                value={field.value}
+                onChange={field.onChange}
+                placeholder="Introduceți informații suplimentare sau observații despre această rezervare..."
+                rows={4}
+              />
             )}
           />
         </div>
+        )}
 
-        {/* 3. Guests */}
-        <Controller
-          name="guests"
-          control={control}
-          rules={{
-            required: t("common.required") as string,
-            min: { value: 1, message: t("common.required") as string },
-          }}
-          render={({ field }) => (
-            <CustomInput
-              label="Guests"
-              type="number"
-              value={field.value}
-              onChange={(e) => field.onChange(Number(e.target.value))}
-              required
-              error={errors.guests?.message as string}
-            />
-          )}
-        />
+        {/* Zona 2. Informații client */}
+        {showClient && (
+        <div className="space-y-4">
+          {!section && <h2 className="text-base font-semibold text-gray-900">2. Informații Client</h2>}
 
-        {/* 4. Status & Price */}
-        <Controller
-          name="status"
-          control={control}
-          render={({ field }) => (
-            <CustomInput
-              label="Status"
-              value={field.value}
-              onChange={field.onChange}
-            />
-          )}
-        />
+          <Controller
+            name="customerName"
+            control={control}
+            render={({ field }) => (
+              <CustomInput
+                label="Nume client"
+                value={field.value}
+                onChange={field.onChange}
+              />
+            )}
+          />
 
-        <Controller
-          name="totalPrice"
-          control={control}
-          render={({ field }) => (
-            <CustomInput
-              label="Total Price"
-              type="number"
-              value={field.value}
-              onChange={(e) => field.onChange(Number(e.target.value))}
-            />
-          )}
-        />
+          <Controller
+            name="customerEmail"
+            control={control}
+            render={({ field }) => (
+              <CustomInput
+                label="Email client"
+                type="email"
+                value={field.value}
+                onChange={field.onChange}
+              />
+            )}
+          />
 
-        {/* 5. Customer info */}
-        <Controller
-          name="customerName"
-          control={control}
-          render={({ field }) => (
-            <CustomInput
-              label="Customer Name"
-              value={field.value}
-              onChange={field.onChange}
-            />
-          )}
-        />
+          <Controller
+            name="customerPhone"
+            control={control}
+            render={({ field }) => (
+              <CustomInput
+                label="Telefon client"
+                value={field.value}
+                onChange={field.onChange}
+              />
+            )}
+          />
+        </div>
+        )}
 
-        <Controller
-          name="customerEmail"
-          control={control}
-          render={({ field }) => (
-            <CustomInput
-              label="Customer Email"
-              type="email"
-              value={field.value}
-              onChange={field.onChange}
-            />
-          )}
-        />
+        {/* Zona 3. Preț */}
+        {showPrice && (
+        <div className="space-y-4">
+          {!section && <h2 className="text-base font-semibold text-gray-900">3. Preț</h2>}
 
-        <Controller
-          name="customerPhone"
-          control={control}
-          render={({ field }) => (
-            <CustomInput
-              label="Customer Phone"
-              value={field.value}
-              onChange={field.onChange}
-            />
-          )}
-        />
-
-        {/* 6. Additional Info / Observations */}
-        <Controller
-          name="additionalInfo"
-          control={control}
-          render={({ field }) => (
-            <CustomTextarea
-              label="Additional Info / Observations"
-              value={field.value}
-              onChange={field.onChange}
-              placeholder="Enter any additional information or observations about this booking..."
-              rows={4}
-            />
-          )}
-        />
+          <Controller
+            name="totalPrice"
+            control={control}
+            render={({ field }) => (
+              <CustomInput
+                label="Preț total"
+                type="number"
+                value={field.value}
+                onChange={(e) => field.onChange(Number(e.target.value))}
+              />
+            )}
+          />
+        </div>
+        )}
       </form>
 
       {/* Footer fix */}

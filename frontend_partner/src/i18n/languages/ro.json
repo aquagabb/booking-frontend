@@ -115,8 +115,10 @@
     "confirmed": "Confirmată",
     "cancelled": "Anulată",
     "completed": "Finalizată",
+    "rejected": "Respinsă",
+    "expired": "Expirată",
     "notes": {
-      "title": "Notițe",
+      "title": "Notițe & Cerințe",
       "add_note": "Adaugă Notiță",
       "placeholder": "Adaugă o notiță despre această rezervare...",
       "save": "Salvează",

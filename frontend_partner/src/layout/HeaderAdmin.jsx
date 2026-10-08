@@ -206,7 +206,7 @@ const HeaderAdmin = () => {
     <header className="bg-white sticky top-0 z-50 w-full border-b border-gray-200 max-h-16">
       <div className="mx-auto px-4 h-16 flex items-center justify-between gap-4">
         <Link to="/partner/dashboard" className="flex items-center flex-shrink-0">
-          <span className="text-lg font-bold">EventFinder Partner</span>
+          <img src="/logo.png" alt="Logo" className="h-auto w-[140px] min-w-[120px]" />
         </Link>
 
         <div className="flex items-center gap-1.5 flex-shrink-0">
