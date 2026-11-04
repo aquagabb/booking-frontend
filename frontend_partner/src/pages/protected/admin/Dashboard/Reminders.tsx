@@ -19,7 +19,7 @@ type ApiReminder = {
   type: ReminderType;
   itemId: number | string | null;
   description: string;
-  remindAt: string;
+  remindAt: string | null;
   sentAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -92,7 +92,7 @@ const AddReminderModal = ({
     type: ReminderType;
     itemId: number | string | null;
     description: string;
-    remindAt: string;
+    remindAt: string | null;
   }) => Promise<void>;
   bookingOptions: BookingOption[];
   isLoadingBookings: boolean;
@@ -106,6 +106,13 @@ const AddReminderModal = ({
   const [selectedLocationId, setSelectedLocationId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Dacă există o singură locație, o preselectăm automat
+  useEffect(() => {
+    if (targetType === 'location' && !selectedLocationId && locationOptions.length === 1) {
+      setSelectedLocationId(String(locationOptions[0].id));
+    }
+  }, [targetType, selectedLocationId, locationOptions]);
+
   const resetAndClose = () => {
     setTargetType('general');
     setText('');
@@ -117,13 +124,12 @@ const AddReminderModal = ({
 
   const isValid =
     text.trim().length > 0 &&
-    date !== null &&
     (targetType === 'general' ||
       (targetType === 'booking' && selectedBookingId) ||
       (targetType === 'location' && selectedLocationId));
 
   const handleSubmit = async () => {
-    if (!isValid || !date) return;
+    if (!isValid) return;
 
     const itemId =
       targetType === 'booking'
@@ -138,7 +144,7 @@ const AddReminderModal = ({
         type: targetType,
         itemId,
         description: text.trim(),
-        remindAt: date.toISOString(),
+        remindAt: date ? date.toISOString() : null,
       });
       resetAndClose();
     } catch (error) {
@@ -232,13 +238,22 @@ const AddReminderModal = ({
         </div>
 
         <CustomDatePicker
-          label="Dată"
+          label="Dată reminder (opțional)"
           selected={date}
           onChange={setDate}
           iconLeft={<Calendar className="w-4 h-4 text-gray-400" />}
           placeholder="Selectează data și ora"
           showTimeSelect
         />
+        {date && (
+          <button
+            type="button"
+            onClick={() => setDate(null)}
+            className="text-xs text-muted hover:text-[var(--color-red)] transition-colors -mt-3"
+          >
+            Elimină data
+          </button>
+        )}
 
         <div className="flex justify-end gap-2 pt-2">
           <button
@@ -269,7 +284,7 @@ const EditReminderModal = ({
 }: {
   reminder: ApiReminder | null;
   onClose: () => void;
-  onSave: (id: number, payload: { description: string; remindAt: string }) => Promise<void>;
+  onSave: (id: number, payload: { description: string; remindAt: string | null }) => Promise<void>;
 }) => {
   const [text, setText] = useState('');
   const [date, setDate] = useState<Date | null>(null);
@@ -278,20 +293,20 @@ const EditReminderModal = ({
   useEffect(() => {
     if (reminder) {
       setText(reminder.description);
-      setDate(new Date(reminder.remindAt));
+      setDate(reminder.remindAt ? new Date(reminder.remindAt) : null);
     }
   }, [reminder]);
 
-  const isValid = text.trim().length > 0 && date !== null;
+  const isValid = text.trim().length > 0;
 
   const handleSubmit = async () => {
-    if (!isValid || !date || !reminder) return;
+    if (!isValid || !reminder) return;
 
     try {
       setIsSubmitting(true);
       await onSave(reminder.id, {
         description: text.trim(),
-        remindAt: date.toISOString(),
+        remindAt: date ? date.toISOString() : null,
       });
       onClose();
     } catch (error) {
@@ -321,13 +336,22 @@ const EditReminderModal = ({
         </div>
 
         <CustomDatePicker
-          label="Dată"
+          label="Dată reminder (opțional)"
           selected={date}
           onChange={setDate}
           iconLeft={<Calendar className="w-4 h-4 text-gray-400" />}
           placeholder="Selectează data și ora"
           showTimeSelect
         />
+        {date && (
+          <button
+            type="button"
+            onClick={() => setDate(null)}
+            className="text-xs text-muted hover:text-[var(--color-red)] transition-colors -mt-3"
+          >
+            Elimină data
+          </button>
+        )}
 
         <div className="flex justify-end gap-2 pt-2">
           <button
@@ -432,7 +456,7 @@ const Reminders = ({ limit }: { limit?: number } = {}) => {
     type: ReminderType;
     itemId: number | string | null;
     description: string;
-    remindAt: string;
+    remindAt: string | null;
   }) => {
     const { status } = await createReminder(payload);
     if (status !== 200 && status !== 201) {
@@ -441,7 +465,7 @@ const Reminders = ({ limit }: { limit?: number } = {}) => {
     await fetchReminders();
   };
 
-  const saveReminder = async (id: number, payload: { description: string; remindAt: string }) => {
+  const saveReminder = async (id: number, payload: { description: string; remindAt: string | null }) => {
     const { status } = await updateReminder(id, payload);
     if (status !== 200 && status !== 201) {
       throw new Error('Failed to update reminder');
@@ -512,7 +536,9 @@ const Reminders = ({ limit }: { limit?: number } = {}) => {
             >
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-secondary truncate">{reminder.description}</p>
-                <p className="text-xs text-muted mt-0.5">{formatDateRomanian(reminder.remindAt, true)}</p>
+                {reminder.remindAt && (
+                  <p className="text-xs text-muted mt-0.5">{formatDateRomanian(reminder.remindAt, true)}</p>
+                )}
                 <TargetBadge target={getReminderTarget(reminder, bookingOptions, locationOptions)} />
               </div>
 

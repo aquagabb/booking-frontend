@@ -73,6 +73,14 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
       marginTop: '8px',
       overflowX: 'hidden',
     }),
+    // Meniul e randat printr-un portal în document.body (vezi menuPortalTarget mai jos),
+    // deci iese complet din flow-ul normal — nu mai poate fi tăiat sau crea scroll în
+    // containere părinte cu overflow (modaluri, carduri etc.). Are nevoie de propriul
+    // z-index, separat de `menu`, pentru că portalul scapă din stiva de stacking locală.
+    menuPortal: (provided) => ({
+      ...provided,
+      zIndex: 9999,
+    }),
     menuList: (provided) => ({
       ...provided,
       padding: '0.25rem',
@@ -143,6 +151,8 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
           classNamePrefix="react-select"
           required={required}
           isDisabled={isDisabled}
+          menuPortalTarget={document.body}
+          menuPosition="fixed"
         />
         {iconRight && (
           <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none z-10">

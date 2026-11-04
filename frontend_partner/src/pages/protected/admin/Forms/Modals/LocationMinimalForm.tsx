@@ -257,9 +257,10 @@ export const LocationMinimalForm: React.FC<BookingFormBunProps> = ({ slug }) => 
                     render={({ field }) => (
                         <CustomInput
                             label="Guests"
-                            type="number"
+                            type="text"
+                            inputMode="numeric"
                             value={field.value}
-                            onChange={(e) => field.onChange(Number(e.target.value))}
+                            onChange={(e) => field.onChange(Number(e.target.value.replace(/\D/g, '')) || 0)}
                             required
                             error={errors.guests?.message as string}
                         />
@@ -285,9 +286,10 @@ export const LocationMinimalForm: React.FC<BookingFormBunProps> = ({ slug }) => 
                     render={({ field }) => (
                         <CustomInput
                             label="Total Price"
-                            type="number"
+                            type="text"
+                            inputMode="decimal"
                             value={field.value}
-                            onChange={(e) => field.onChange(Number(e.target.value))}
+                            onChange={(e) => field.onChange(e.target.value.replace(/[^0-9.]/g, ''))}
                         />
                     )}
                 />

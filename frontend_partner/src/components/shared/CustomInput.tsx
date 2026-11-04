@@ -1,11 +1,14 @@
 import React from 'react';
 
 interface InputProps {
+  id?: string;
   label: string;
   type?: string;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
   value: string | number;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onFocus?: (e: React.FocusEvent<HTMLInputElement>) => void;
+  onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
   error?: string;
   placeholder?: string;
   required?: boolean;
@@ -16,11 +19,14 @@ interface InputProps {
 }
 
 const CustomInput: React.FC<InputProps> = ({
+  id,
   label,
   type = 'text',
+  inputMode,
   value,
   onChange,
   onFocus,
+  onBlur,
   placeholder = '',
   required = false,
   disabled = false,
@@ -32,7 +38,7 @@ const CustomInput: React.FC<InputProps> = ({
   return (
     <div>
       {label && (
-        <label className={`block text-sm font-semibold mb-2 ${error ? 'text-red-600' : 'text-gray-dark'}`}>
+        <label htmlFor={id} className={`block text-sm font-semibold mb-2 ${error ? 'text-red-600' : 'text-gray-dark'}`}>
           {label} {required && <span className="text-red-600">*</span>}
         </label>
       )}
@@ -43,10 +49,14 @@ const CustomInput: React.FC<InputProps> = ({
           </div>
         )}
         <input
+          id={id}
           type={type}
+          inputMode={inputMode}
           value={value}
           onChange={onChange}
           onFocus={onFocus}
+          onBlur={onBlur}
+          aria-invalid={error ? true : undefined}
           onClick={(e) => {
             // Pentru input-uri cu picker nativ (time, date etc.), deschide selectorul la click oriunde pe câmp,
             // nu doar pe iconița nativă din dreapta.

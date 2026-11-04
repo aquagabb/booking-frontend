@@ -155,10 +155,11 @@ const EditReservationModal: React.FC<EditReservationModalProps> = ({
 
             <CustomInput
               label={t("reservations.guests")}
-              type="number"
+              type="text"
+              inputMode="numeric"
               value={guests}
               onChange={(e) => {
-                setGuests(e.target.value);
+                setGuests(e.target.value.replace(/\D/g, ''));
                 setError(null);
               }}
               placeholder={t("edit_reservation.guests_placeholder") || "Enter number of guests"}

@@ -48,7 +48,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
       onClick={handleBackdropClick}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
     >
-      <div className="bg-white rounded-lg w-[90%] h-[90%] flex overflow-hidden shadow-2xl relative">
+      <div className="bg-white rounded-lg w-[90%] h-[90%] flex overflow-hidden border border-[var(--color-gray)] relative">
 
         <div className="flex-1 flex items-center justify-center border-r">
           <img
@@ -62,7 +62,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
         <div className="w-80 bg-white p-6 flex flex-col justify-between">
 
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-semibold">Photo details</h3>
+            <h3 className="text-lg font-semibold">Detalii poză</h3>
             <button onClick={onClose}>
               <X className="w-6 h-6 text-gray-500 hover:text-gray-800" />
             </button>
@@ -72,14 +72,17 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
 
             <div>
               <label className="block text-sm font-medium text-gray-600 mb-1">
-                Order
+                Ordine
               </label>
               <input
-                type="number"
-                min={1}
-                max={999}
+                type="text"
+                inputMode="numeric"
                 value={order}
-                onChange={(e) => setOrder(Number(e.target.value))}
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/\D/g, "");
+                  const next = digits === "" ? 0 : Math.min(999, parseInt(digits, 10));
+                  setOrder(next);
+                }}
                 className="w-full border rounded px-3 py-2 focus:ring focus:ring-blue-200"
               />
             </div>
@@ -87,7 +90,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
 
             <div>
               <label className="block text-sm font-medium text-gray-600 mb-1">
-                Category
+                Categorie
               </label>
               <select
                 className="w-full border rounded px-3 py-2 focus:ring focus:ring-blue-200"
@@ -111,7 +114,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                 className="h-4 w-4 text-blue-600 border-gray-300 rounded"
               />
               <label htmlFor="isActive" className="text-sm text-gray-700">
-                Visible on site
+                Vizibilă pe site
               </label>
             </div>
           </div>
@@ -123,7 +126,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
               onClick={() => setIsConfirmDeleteOpen(true)}
               className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded border text-sm hover:bg-gray-100 transition"
             >
-              <Trash2 className="w-4 h-4" /> Delete
+              <Trash2 className="w-4 h-4" /> Șterge
             </button>
 
 
@@ -131,17 +134,17 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
               onClick={handleSave}
               className="w-full bg-primary text-white flex items-center justify-center gap-2 px-3 py-2 rounded text-sm hover:bg-primary/90 transition"
             >
-              <Save className="w-4 h-4" /> Save
+              <Save className="w-4 h-4" /> Salvează
             </button>
           </div>
         </div>
 
         <ConfirmModal
           isOpen={isConfirmDeleteOpen}
-          title="Confirm deletion"
-          text="Are you sure you want to delete this photo? This action cannot be undone."
-          cancelText="Cancel"
-          confirmText="Delete"
+          title="Confirmă ștergerea"
+          text="Sigur vrei să ștergi această poză? Această acțiune nu poate fi anulată."
+          cancelText="Anulează"
+          confirmText="Șterge"
           onClose={() => setIsConfirmDeleteOpen(false)}
           onConfirm={confirmDelete}
         />

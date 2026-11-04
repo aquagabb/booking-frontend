@@ -249,9 +249,10 @@ const Notes = ({ bookingId, onNotesChange }: NotesProps) => {
           <div>
             <CustomInput
               label="Ajustare preț (lei)"
-              type="number"
+              type="text"
+              inputMode="decimal"
               value={notePrice}
-              onChange={(e) => setNotePrice(e.target.value)}
+              onChange={(e) => setNotePrice(e.target.value.replace(/[^0-9.]/g, ''))}
               placeholder="0.00"
               error={undefined}
             />

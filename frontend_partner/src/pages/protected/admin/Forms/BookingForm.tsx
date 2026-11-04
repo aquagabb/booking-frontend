@@ -89,10 +89,11 @@ const BookingForm: React.FC<BookingFormProps> = ({
         <option>Other</option>
       </select>
       <input
-        type="number"
+        type="text"
+        inputMode="numeric"
         placeholder="Guests"
         value={guests}
-        onChange={(e) => setGuests(Number(e.target.value))}
+        onChange={(e) => setGuests(Number(e.target.value.replace(/\D/g, '')) || 0)}
         className="w-full rounded border px-3 py-2 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
       />
       <input

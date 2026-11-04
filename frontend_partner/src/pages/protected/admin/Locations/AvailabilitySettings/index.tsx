@@ -5,7 +5,8 @@ import defaultRecurringSchedule from "./defaultRecurringSchedule.json";
 import RecurringSchedule from "./RecurringSchedule";
 import RecurringBlocks from "./RecurringBlocks";
 import GeneralRules from "./GeneralRules";
-import { getAvailabilityRules } from "../../../../../api/locations/locations";
+import { useTranslation } from "react-i18next";
+import { getAvailabilityRules, saveAvailabilityRules } from "../../../../../api/locations/locations";
 
 const initialRecurringSchedule = defaultRecurringSchedule as RecurringRule[];
 
@@ -92,12 +93,59 @@ function mapBlockedToRecurringBlocks(items: ApiAvailabilityItem[]): RecurringBlo
   }));
 }
 
+/** Invers față de `mapApiDaysToWeekdayIndexes`: intern 0=Luni … API 1=Luni (ISO). */
+function mapWeekdayIndexesToApiDays(days: WeekdayIndex[]): number[] {
+  return days.map((d) => d + 1);
+}
+
+/** Invers față de `apiTimeToHHmm`: UI trimite `HH:mm`, API-ul așteaptă `HH:mm:ss`. */
+function hhmmToApiTime(time: string): string {
+  return time.length === 5 ? `${time}:00` : time;
+}
+
+function recurringRuleToApiPayload(rule: RecurringRule) {
+  const numericId = Number(rule.id);
+  return {
+    id: Number.isNaN(numericId) ? undefined : numericId,
+    title: rule.label,
+    type: "schedule" as const,
+    daysOfWeek: mapWeekdayIndexesToApiDays(rule.days),
+    startTime: hhmmToApiTime(rule.startTime),
+    endTime: hhmmToApiTime(rule.endTime),
+    dateFrom: rule.dateFrom,
+    dateTo: rule.dateTo,
+    enabled: rule.enabled,
+  };
+}
+
+function recurringBlockToApiPayload(block: RecurringBlock) {
+  const numericId = Number(block.id);
+  return {
+    id: Number.isNaN(numericId) ? undefined : numericId,
+    title: block.reason,
+    type: "block" as const,
+    daysOfWeek: mapWeekdayIndexesToApiDays(block.days),
+    startTime: hhmmToApiTime(block.startTime),
+    endTime: hhmmToApiTime(block.endTime),
+    dateFrom: block.dateFrom,
+    dateTo: block.dateTo,
+    enabled: block.enabled,
+  };
+}
+
 type AvailabilitySettingsProps = {
   slug?: string;
+  onSaved?: () => void;
+  /** Când e folosit într-un wizard cu footer propriu: ascunde butonul intern de salvare,
+   * dar îl păstrează în DOM (cu id stabil) ca să poată fi declanșat din exterior. */
+  embedded?: boolean;
 };
 
-const AvailabilitySettingsPage: React.FC<AvailabilitySettingsProps> = ({ slug }) => {
+const AvailabilitySettingsPage: React.FC<AvailabilitySettingsProps> = ({ slug, onSaved, embedded }) => {
+  const { t } = useTranslation();
   const locationId = useMemo(() => parseLocationIdFromSlug(slug), [slug]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   const [isLoading, setIsLoading] = useState(() => !!locationId);
   const [config, setConfig] = useState<AvailabilityConfig>(() =>
@@ -154,10 +202,33 @@ const AvailabilitySettingsPage: React.FC<AvailabilitySettingsProps> = ({ slug })
     setConfig((c) => ({ ...c, generalRules: { ...DEFAULT_GENERAL_RULES, ...generalRules } }));
   }, []);
 
-  const handleSubmit = useCallback((e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log(JSON.stringify(config, null, 2));
-  }, [config]);
+    if (!locationId) return;
+
+    setIsSubmitting(true);
+    setFeedback(null);
+
+    try {
+      const rules = [
+        ...config.recurringSchedule.map(recurringRuleToApiPayload),
+        ...config.recurringBlocks.map(recurringBlockToApiPayload),
+      ];
+
+      const { environment } = await saveAvailabilityRules(locationId, { rules });
+
+      if (environment.status === 200) {
+        setFeedback({ type: "success", message: t("common.update_success") });
+        onSaved?.();
+      } else {
+        setFeedback({ type: "error", message: t("common.update_error") });
+      }
+    } catch {
+      setFeedback({ type: "error", message: t("common.update_error") });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [config, locationId, onSaved, t]);
 
   if (isLoading) {
     return (
@@ -184,12 +255,25 @@ const AvailabilitySettingsPage: React.FC<AvailabilitySettingsProps> = ({ slug })
       <div className="border-t border-gray-200 dark:border-gray-700"></div>
       <GeneralRules value={config.generalRules} onChange={setGeneralRules} />
 
-      <div className="sticky bottom-0 -mx-2 flex justify-end border-t border-gray-200 bg-white/95 px-2 py-4 backdrop-blur dark:border-gray-700 dark:bg-gray-900/95">
+      <div className={`sticky bottom-0 -mx-2 flex items-center justify-between gap-3 border-t border-gray-200 bg-white/95 px-2 py-4 backdrop-blur dark:border-gray-700 dark:bg-gray-900/95 ${embedded ? "hidden" : ""}`}>
+        {feedback && (
+          <div
+            className={`text-sm font-medium px-3 py-1 rounded-lg ${
+              feedback.type === "success"
+                ? "bg-green-100 text-green-700"
+                : "bg-red-100 text-red-700"
+            }`}
+          >
+            {feedback.message}
+          </div>
+        )}
         <button
+          id="availability-save-submit"
           type="submit"
-          className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+          disabled={isSubmitting}
+          className="btn-primary px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
         >
-          Salvează
+          {isSubmitting ? t("common.saving") : t("common.save")}
         </button>
       </div>
     </form>

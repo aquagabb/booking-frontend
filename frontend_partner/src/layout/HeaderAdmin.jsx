@@ -109,7 +109,7 @@ const ProfileMenuLink = ({ to, icon: Icon, label, onClick }) => (
     onClick={onClick}
   >
     <Icon className="w-4 h-4 text-muted group-hover:text-primary transition-colors duration-200" />
-    <span className="group-hover:text-secondary transition-colors duration-200">{label}</span>
+    <span className=" transition-colors duration-200">{label}</span>
   </NavLink>
 );
 

@@ -1,6 +1,7 @@
 import React from "react";
 
 interface TextareaProps {
+  id?: string;
   label: string;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
@@ -13,6 +14,7 @@ interface TextareaProps {
 }
 
 const CustomTextarea: React.FC<TextareaProps> = ({
+  id,
   label,
   value,
   onChange,
@@ -26,7 +28,7 @@ const CustomTextarea: React.FC<TextareaProps> = ({
   return (
     <div>
       {label && (
-        <label className={`block text-sm font-semibold mb-2 ${error ? 'text-red-600' : 'text-gray-dark'}`}>
+        <label htmlFor={id} className={`block text-sm font-semibold mb-2 ${error ? 'text-red-600' : 'text-gray-dark'}`}>
           {label} {required && <span className="text-red-600">*</span>}
         </label>
       )}
@@ -37,6 +39,7 @@ const CustomTextarea: React.FC<TextareaProps> = ({
           </div>
         )}
         <textarea
+          id={id}
           value={value}
           onChange={onChange}
           placeholder={placeholder}

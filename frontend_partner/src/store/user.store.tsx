@@ -5,6 +5,14 @@ import {
   getUnreadNotificationsCount,
 } from '../api/notifications/notifications';
 import { parseUnreadCountResponse } from '../utils/notificationResponses';
+import { useAdminStore } from './admin.store';
+import { clearOnboardingPointer } from '../pages/protected/admin/Locations/Onboarding/onboardingStorage';
+
+/** Șterge datele legate de contul curent din celelalte store-uri / localStorage. */
+const clearAccountScopedData = () => {
+  useAdminStore.getState().clearOrganization();
+  clearOnboardingPointer();
+};
 
 const SYNC_INTERVAL = 5 * 60 * 1000;
 
@@ -54,17 +62,32 @@ export const useUserStore = create<UserState>()(
       lastMessageSyncedAt: null,
       hasHydrated: false,
 
-      setUser: (user) => set({ user }),
+      setUser: (user) => {
+        const previous = get().user;
+        // Alt cont decât cel memorat (ex. sesiune expirată fără logout) → nu păstrăm datele vechi
+        if (!previous || String(previous.id) !== String(user.id)) {
+          clearAccountScopedData();
+          set({
+            unreadCount: 0,
+            unreadMessageCount: 0,
+            lastNotifSyncedAt: null,
+            lastMessageSyncedAt: null,
+          });
+        }
+        set({ user });
+      },
       setHasHydrated: (hasHydrated) => set({ hasHydrated }),
 
-      clearUser: () =>
+      clearUser: () => {
+        clearAccountScopedData();
         set({
           user: null,
           unreadCount: 0,
           unreadMessageCount: 0,
           lastNotifSyncedAt: null,
           lastMessageSyncedAt: null,
-        }),
+        });
+      },
 
       updatePreferences: (preferences) =>
         set((state) => {

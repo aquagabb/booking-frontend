@@ -28,7 +28,11 @@ const menuItems = [
   // { label: 'Analytics', icon: BarChart2, to: '/dashboard/analytics' },
 ];
 
-const Sidebar = () => {
+type SidebarProps = {
+  disabled?: boolean;
+};
+
+const Sidebar = ({ disabled = false }: SidebarProps) => {
   const { pathname } = useLocation();
   const { user, updatePreferences } = useUserStore();
   const { metrics, fetchMetrics } = useAdminStore();
@@ -61,24 +65,24 @@ const Sidebar = () => {
           const isMessages = to === '/partner/messages';
           const showBadge = isMessages && unreadMessagesCount > 0;
 
-          return (
-            <Link
-              key={to}
-              to={to}
-              className={clsx(
-                'flex items-center px-4 py-3 rounded-xl transition-all relative',
-                isOpen ? 'gap-4' : 'justify-center',
-                'text-base font-medium',
-                isActive
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-gray-700 hover:bg-gray-100'
-              )}
-            >
+          const itemClassName = clsx(
+            'flex items-center px-4 py-3 rounded-xl transition-all relative',
+            isOpen ? 'gap-4' : 'justify-center',
+            'text-base font-medium',
+            disabled
+              ? 'text-gray-400 cursor-not-allowed'
+              : isActive
+              ? 'bg-primary/10 text-primary'
+              : 'text-gray-700 hover:bg-gray-100'
+          );
+
+          const content = (
+            <>
               <Icon className="w-6 h-6" />
               {isOpen && (
                 <span className="flex-1">{label}</span>
               )}
-              {showBadge && (
+              {showBadge && !disabled && (
                 <span className={clsx(
                   'flex items-center justify-center rounded-full bg-primary text-white text-xs font-semibold',
                   isOpen ? 'min-w-[20px] h-5 px-1.5' : 'min-w-[18px] h-[18px] px-1 text-[10px]'
@@ -86,6 +90,20 @@ const Sidebar = () => {
                   {unreadMessagesCount}
                 </span>
               )}
+            </>
+          );
+
+          if (disabled) {
+            return (
+              <div key={to} className={itemClassName} aria-disabled="true">
+                {content}
+              </div>
+            );
+          }
+
+          return (
+            <Link key={to} to={to} className={itemClassName}>
+              {content}
             </Link>
           );
         })}

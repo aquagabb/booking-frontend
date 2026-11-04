@@ -1,5 +1,6 @@
 import moment from "moment";
 import { Plus, Users, Settings, Globe, Link2 } from "lucide-react";
+import { getPublicCalendarUrl } from "../../lib/utils";
 
 const CalendarSidebar = ({
   today,
@@ -12,7 +13,7 @@ const CalendarSidebar = ({
   locationId,
 }) => {
   const publicCalendarUrl = locationId
-    ? `${window.location.origin}/public-calendar/${locationId}`
+    ? getPublicCalendarUrl(locationId)
     : null;
 
   const handleViewPublicCalendar = () => {

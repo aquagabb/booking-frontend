@@ -47,13 +47,15 @@ apiWithToken.interceptors.response.use(
     error => {
         if (error.response && error.response.status === 401) {
             console.log('Unauthorized access. Redirect to login page or show a modal.');
-            localStorage.setItem('user-storage', null);
+            localStorage.removeItem('user-storage');
+            localStorage.removeItem('admin-storage');
             window.location.href = '/login';
         }
 
         if (error.response && error.response.status === 403) {
             console.log('Access denied. Redirect to forbidden page or show an access denied message.');
-            localStorage.setItem('user-storage', null);
+            localStorage.removeItem('user-storage');
+            localStorage.removeItem('admin-storage');
             window.location.href = '/login';
         }
 

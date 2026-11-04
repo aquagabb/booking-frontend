@@ -2,7 +2,7 @@ import { AlertTriangle, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminStore } from '../../../../store/admin.store';
 
-const getCompletionColor = (completion) => {
+export const getCompletionColor = (completion) => {
   if (completion >= 80) return 'var(--color-green)';
   if (completion >= 40) return 'var(--color-accent)';
   return 'var(--color-red)';

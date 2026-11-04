@@ -64,6 +64,7 @@
   "common": {
     "cancel": "Cancel",
     "back": "Back",
+    "continue": "Continue",
     "edit": "Edit",
     "delete": "Delete",
     "save": "Save changes",
@@ -71,7 +72,6 @@
     "required": "Required",
     "modified": "Modified",
     "view_all": "View all",
-    "required": "Required",
     "required_all": "Please complete all required fields",
     "update_success": "Location updated successfully",
     "update_error": "Failed to update",
@@ -134,13 +134,21 @@
     "facilities": "Facilities",
     "space_rules": "Space Rules",
     "capacity_layout": "Capacity Layout",
+    "seating_types": {
+      "dining": "Banquet style",
+      "standing": "Cocktail (standing)",
+      "theater": "Theater style",
+      "boardroom": "Boardroom",
+      "classroom": "Classroom style",
+      "default": "Flexible"
+    },
     "pricing": "Pricing",
     "default_pricing": "Default Global Pricing",
     "default_pricing_description": "This pricing applies by default to all event categories, unless there is a specific override.",
     "category_pricing": "Special Price for Category",
-    "category_pricing_overrides": "Category-Specific Pricing",
-    "category_pricing_description": "Configure specific pricing for certain event categories.",
-    "add_category_pricing": "Add special price ",
+    "category_pricing_overrides": "Special pricing",
+    "category_pricing_description": "Different rates for certain event categories.",
+    "add_category_pricing": "Add special price",
     "no_category_pricing": "No special pricing configured for categories.",
     "no_pricing": "No pricing configured",
     "price_on_application": "Price on application",
@@ -152,11 +160,11 @@
     "incomplete_warning": "The location needs the following fields to be available for people:",
     "no_location_selected": "No location selected.",
     "currency": "Currency",
-    "time_mode": "Time Mode",
-    "time_mode_description": "Charge customers based on duration (hours/days).",
-    "guest_mode": "Guest Mode",
-    "guest_mode_description": "Calculate pricing based on headcount.",
-    "price_on_application_description": "Display \"Contact for Pricing\" instead of rates.",
+    "time_mode": "Price per hour",
+    "time_mode_description": "Fixed rate for each hour of rental.",
+    "guest_mode": "Price per guest",
+    "guest_mode_description": "Rate calculated based on number of guests.",
+    "price_on_application_description": "You set the individual price for each event.",
     "active_pricing_modes": "Active pricing modes",
     "price_per_hour": "Price per hour",
     "price_per_day": "Price per day",
@@ -167,6 +175,13 @@
     "category_label_fallback": "Category {{id}}",
     "min_hours": "Min hours",
     "min_guests": "Min guests",
+    "onboarding": {
+      "complete_title": "Location is set up",
+      "complete_description": "You've filled in the details, photos, pricing and availability. You can always come back and edit the location from the properties list.",
+      "publish_now": "Publish location now",
+      "publish_now_description": "If you leave it unpublished, you can always make it visible later from Location details.",
+      "finish": "Finish"
+    },
     "categories_photos": {
       "name": "Name",
       "order": "Order"
@@ -390,7 +405,23 @@
     "language": "Language",
     "theme": "Theme",
     "appearance": "Appearance",
-    "coming_soon": "Coming soon"
+    "coming_soon": "Coming soon",
+    "tab_overview": "Overview",
+    "tab_reminders": "Reminders",
+    "priority_title": "Priority Operations Required",
+    "priority_pending": "{{count}} pending pre-bookings",
+    "priority_holds_one": "{{count}} expiring hold",
+    "priority_holds_other": "{{count}} expiring holds",
+    "priority_messages_one": "{{count}} unread message",
+    "priority_messages_other": "{{count}} unread messages",
+    "priority_you_have": "You have",
+    "priority_needing_attention": "needing attention.",
+    "priority_and": "and",
+    "review_pending": "Review Pending",
+    "events_on": "Events on {{date}}",
+    "events": "Events",
+    "no_events_for_date": "No events scheduled for this date.",
+    "booking_details": "Booking Details"
   },
   "features": {
     "air_conditioning": "Air Conditioning",
@@ -632,6 +663,7 @@
     "marketing_emails": "Marketing Emails",
     "marketing_emails_desc": "Receive updates about new features and promotions",
     "notifications_update_success": "Notification preferences updated successfully",
-    "notifications_update_error": "Failed to update notification preferences"
+    "notifications_update_error": "Failed to update notification preferences",
+    "subscription": "Subscription"
   }
 }

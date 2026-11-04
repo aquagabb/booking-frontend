@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import PhotoModal from "./PhotoModal";
 import { Plus, Edit2, Trash2 } from "lucide-react";
 import FileUploader from "./FileUploader";
@@ -21,6 +21,10 @@ interface GalleryPhotosProps {
   locationId: number;
 }
 
+/** Sugestii rapide pentru numele unei categorii noi — doar completează câmpul, userul
+ * poate oricând scrie altceva. Momentan hardcodate în frontend, în română. */
+const SUGGESTED_PHOTO_CATEGORIES = ["Meniu", "Exteriorul locației", "Interiorul locației"];
+
 const GalleryPhotos = ({ locationId }: GalleryPhotosProps) => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedPhoto, setSelectedPhoto] = useState<
@@ -38,13 +42,30 @@ const GalleryPhotos = ({ locationId }: GalleryPhotosProps) => {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [categoryName, setCategoryName] = useState("");
   const [categoryOrder, setCategoryOrder] = useState(1);
+  const [showCategorySuggestions, setShowCategorySuggestions] = useState(false);
+  const categoryNameFieldRef = useRef<HTMLDivElement | null>(null);
 
+  const filteredCategorySuggestions = SUGGESTED_PHOTO_CATEGORIES.filter((s) =>
+    s.toLowerCase().includes(categoryName.trim().toLowerCase())
+  );
+
+  useEffect(() => {
+    if (!showCategorySuggestions) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (categoryNameFieldRef.current && !categoryNameFieldRef.current.contains(e.target as Node)) {
+        setShowCategorySuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showCategorySuggestions]);
 
   // ---- Helpers ----
   const resetCategoryForm = () => {
     setEditingCategory(null);
     setCategoryName("");
     setCategoryOrder(1);
+    setShowCategorySuggestions(false);
   };
 
   const fetchCategories = async () => {
@@ -161,17 +182,17 @@ const GalleryPhotos = ({ locationId }: GalleryPhotosProps) => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-            Photo Gallery
+            Galerie foto
           </h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Manage your photos by category
+            Gestionează pozele pe categorii
           </p>
         </div>
         <button
           onClick={openAddCategory}
-          className="btn-outline text-white flex items-center gap-1 px-3 py-1.5"
+          className="btn-outline flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium"
         >
-          <Plus className="w-4 h-4" /> Create Category
+          <Plus className="w-4 h-4" /> Adaugă categorie
         </button>
       </div>
 
@@ -221,7 +242,7 @@ const GalleryPhotos = ({ locationId }: GalleryPhotosProps) => {
                 />
                 {photo.isVisible === false && (
                   <span className="absolute bottom-1 right-1 text-[10px] bg-yellow-500 text-white px-1.5 py-0.5 rounded">
-                    Hidden
+                    Ascunsă
                   </span>
                 )}
               </div>
@@ -235,33 +256,53 @@ const GalleryPhotos = ({ locationId }: GalleryPhotosProps) => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-sm">
             <h3 className="text-lg font-semibold mb-4">
-              {editingCategory ? "Edit Category" : "Add Category"}
+              {editingCategory ? "Editează categoria" : "Adaugă categorie"}
             </h3>
             <div className="space-y-4">
-              <CustomInput
-                label={t("locations.categories_photos.name")}
-                placeholder="Name"
-                value={categoryName}
-                onChange={(e) => setCategoryName(e.target.value)}
-              />
+              <div className="relative" ref={categoryNameFieldRef}>
+                <CustomInput
+                  label={t("locations.categories_photos.name")}
+                  placeholder="Nume"
+                  value={categoryName}
+                  onChange={(e) => setCategoryName(e.target.value)}
+                  onFocus={() => setShowCategorySuggestions(true)}
+                />
+                {!editingCategory && showCategorySuggestions && filteredCategorySuggestions.length > 0 && (
+                  <div className="absolute z-10 mt-1 w-full border border-[var(--color-gray)] rounded-lg bg-white overflow-hidden">
+                    {filteredCategorySuggestions.map((suggestion) => (
+                      <button
+                        key={suggestion}
+                        type="button"
+                        onClick={() => {
+                          setCategoryName(suggestion);
+                          setShowCategorySuggestions(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <CustomInput
                 label={t("locations.categories_photos.order")}
-                placeholder="Order"
+                placeholder="Ordine"
                 value={categoryOrder}
                 onChange={(e) => setCategoryOrder(Number(e.target.value))}
               />
               <div className="flex justify-end gap-2">
                 <button
                   onClick={() => setIsCategoryModalOpen(false)}
-                  className="px-3 py-1.5 rounded border text-sm"
+                  className="btn-outline-transparent px-3 py-1.5 rounded-lg text-sm font-medium"
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </button>
                 <button
                   onClick={handleSaveCategory}
-                  className="bg-primary text-white px-3 py-1.5 rounded text-sm"
+                  className="btn-primary px-3 py-1.5 rounded-lg text-sm font-medium"
                 >
-                  Save
+                  {t("common.save")}
                 </button>
               </div>
             </div>
@@ -283,10 +324,10 @@ const GalleryPhotos = ({ locationId }: GalleryPhotosProps) => {
 
       <ConfirmModal
         isOpen={isConfirmDeleteOpen}
-        title="Confirm deletion"
-        text="Are you sure you want to delete this category?"
-        cancelText="Cancel"
-        confirmText="Delete"
+        title="Confirmă ștergerea"
+        text="Sigur vrei să ștergi această categorie?"
+        cancelText={t("common.cancel")}
+        confirmText={t("common.delete")}
         onClose={() => setIsConfirmDeleteOpen(false)}
         onConfirm={confirmDelete}
       />

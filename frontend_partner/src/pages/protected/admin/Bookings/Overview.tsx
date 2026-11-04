@@ -1026,9 +1026,10 @@ const Overview = ({ bookingId }: OverviewProps) => {
         <div className="p-4 space-y-4">
           <CustomInput
             label={`Sumă (${bookingCurrencySymbol})`}
-            type="number"
+            type="text"
+            inputMode="decimal"
             value={paymentAmount}
-            onChange={(e) => setPaymentAmount(e.target.value)}
+            onChange={(e) => setPaymentAmount(e.target.value.replace(/[^0-9.]/g, ''))}
             placeholder="150"
             required
           />

@@ -195,7 +195,16 @@ export const LocationForm: React.FC<LocationFormProps> = ({ slug }) => {
         rules: loc.rules || [],
         status: "Published",
         isVisible: loc.isVisible !== undefined ? loc.isVisible : true,
-        seatingPlans: loc.seatingPlans || [],
+        // GET întoarce { id: <id tip așezare>, planId: <id rând asociere>, ... } — la
+        // salvare (și la potrivirea cu tipurile din /others/general) se folosește `id`, nu `planId`.
+        seatingPlans: (loc.seatingPlans || []).map(
+          (p: { id: string | number; planId?: string | number; name: string; disabled: boolean; guests: number }) => ({
+            id: p.id,
+            name: p.name,
+            disabled: p.disabled,
+            guests: p.guests,
+          })
+        ),
       });
 
       setLocationData(loc);
@@ -482,7 +491,8 @@ export const LocationForm: React.FC<LocationFormProps> = ({ slug }) => {
                   <div className="w-32">
                     <CustomInput
                       label=""
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
                       placeholder="Max guests"
                       value={plan.guests || ""}
                       onChange={(e) => {

@@ -105,3 +105,8 @@ export const getAvailabilityRules = async (locationId: number) => {
     return response;
 }
 
+export const saveAvailabilityRules = async (locationId: number, body) => {
+    const response = await authRequest('POST', `/locations/${locationId}/rules`, body);
+    return response;
+}
+

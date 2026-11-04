@@ -25,7 +25,7 @@ export const createReminder = async (body: {
     type: 'general' | 'booking' | 'location';
     itemId?: number | string | null;
     description: string;
-    remindAt: string;
+    remindAt: string | null;
 }) => {
     const response = await authRequest('POST', '/others/reminders', body);
     return response;
@@ -33,7 +33,7 @@ export const createReminder = async (body: {
 
 export const updateReminder = async (id: number, body: {
     description: string;
-    remindAt: string;
+    remindAt: string | null;
 }) => {
     const response = await authRequest('PUT', `/others/reminders/${id}`, body);
     return response;

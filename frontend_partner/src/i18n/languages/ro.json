@@ -56,13 +56,21 @@
     "facilities": "Facilități",
     "space_rules": "Reguli spațiu",
     "capacity_layout": "Capacitate și planificare",
+    "seating_types": {
+      "dining": "Dining (mese și scaune)",
+      "standing": "Cocktail (în picioare)",
+      "theater": "Teatru (rânduri de scaune)",
+      "boardroom": "Boardroom (masă de conferință)",
+      "classroom": "Classroom (mese și scaune în rânduri)",
+      "default": "Flexibil"
+    },
     "pricing": "Prețuri",
     "default_pricing": "Preț default global",
-    "default_pricing_description": "Acest preț se aplică implicit tuturor categoriilor de eveniment, dacă nu există un override specific.",
+    "default_pricing_description": "Se aplică tuturor categoriilor de eveniment, cu excepția celor pentru care ai setat un preț separat.",
     "category_pricing": "Preț special pentru categorie",
-    "category_pricing_overrides": "Prețuri speciale pe categorii",
-    "category_pricing_description": "Configurează prețuri specifice pentru anumite categorii de eveniment.",
-    "add_category_pricing": "Adaugă preț special pentru un tip de eveniment",
+    "category_pricing_overrides": "Prețuri speciale",
+    "category_pricing_description": "Tarife diferite pentru anumite categorii de evenimente.",
+    "add_category_pricing": "Adaugă preț special",
     "no_category_pricing": "Nu există prețuri speciale configurate pentru categorii.",
     "no_pricing": "Fără preț configurat",
     "price_on_application": "Preț la cerere",
@@ -74,11 +82,11 @@
     "incomplete_warning": "Locația are nevoie de următoarele câmpuri pentru a fi disponibilă pentru oameni:",
     "no_location_selected": "Nu există locație selectată.",
     "currency": "Monedă",
-    "time_mode": "Mod timp",
-    "time_mode_description": "Taxați clienții în funcție de durată (ore/zile).",
-    "guest_mode": "Mod oaspeți",
-    "guest_mode_description": "Calculați prețul în funcție de numărul de oaspeți.",
-    "price_on_application_description": "Afișați \"Contactați pentru preț\" în loc de tarife.",
+    "time_mode": "Preț per oră",
+    "time_mode_description": "Tarif fix pentru fiecare oră de închiriere.",
+    "guest_mode": "Preț per oaspete",
+    "guest_mode_description": "Tarif calculat în funcție de numărul de oaspeți.",
+    "price_on_application_description": "Stabilești prețul individual pentru fiecare eveniment.",
     "active_pricing_modes": "Moduri de preț active",
     "price_per_hour": "Preț pe oră",
     "price_per_day": "Preț pe zi",
@@ -88,7 +96,18 @@
     "price_per_guest_short": "oaspete",
     "category_label_fallback": "Categoria {{id}}",
     "min_hours": "Ore minime",
-    "min_guests": "Oaspeți minimi"
+    "min_guests": "Oaspeți minimi",
+    "categories_photos": {
+      "name": "Nume",
+      "order": "Ordine"
+    },
+    "onboarding": {
+      "complete_title": "Locația este configurată",
+      "complete_description": "Ai completat detaliile, pozele, prețul și disponibilitatea. Poți oricând reveni și edita locația din lista de proprietăți.",
+      "publish_now": "Publică locația acum",
+      "publish_now_description": "Dacă o lași nepublicată, poți oricând să o faci vizibilă mai târziu din Detalii locație.",
+      "finish": "Finalizează"
+    }
   },
   "event_categories": {
     "wedding": "Nuntă",
@@ -196,6 +215,8 @@
   "common": {
     "view_all": "Vezi toate",
     "cancel": "Anulează",
+    "back": "Înapoi",
+    "continue": "Continuă",
     "save": "Salvează",
     "saving": "Se salvează...",
     "edit": "Editează",
@@ -207,7 +228,10 @@
     "loading": "Se încarcă...",
     "refresh": "Reîmprospătare",
     "invalid_phone": "Număr de telefon invalid",
-    "update_profile_success": "Profil actualizat cu succes"
+    "update_profile_success": "Profil actualizat cu succes",
+    "required_all": "Vă rugăm să completați toate câmpurile obligatorii",
+    "password_pattern": "Parola trebuie să conțină cel puțin 8 caractere, o literă mare și o cifră",
+    "passwords_not_match": "Parolele nu coincid"
   },
   "auth": {
     "email": "Email",
@@ -320,10 +344,29 @@
     "marketing_emails": "Email-uri Marketing",
     "marketing_emails_desc": "Primiți actualizări despre funcții noi și promoții",
     "notifications_update_success": "Preferințele de notificări au fost actualizate cu succes",
-    "notifications_update_error": "Eroare la actualizarea preferințelor de notificări"
+    "notifications_update_error": "Eroare la actualizarea preferințelor de notificări",
+    "subscription": "Abonament"
   },
   "dashboard": {
-    "upcoming_events": "Evenimente viitoare"
+    "upcoming_events": "Evenimente viitoare",
+    "tab_overview": "Prezentare generală",
+    "tab_reminders": "Remindere",
+    "priority_title": "Operațiuni prioritare",
+    "priority_pending": "{{count}} pre-rezervări în așteptare",
+    "priority_holds_one": "{{count}} blocare care expiră",
+    "priority_holds_few": "{{count}} blocări care expiră",
+    "priority_holds_other": "{{count}} de blocări care expiră",
+    "priority_messages_one": "{{count}} mesaj necitit",
+    "priority_messages_few": "{{count}} mesaje necitite",
+    "priority_messages_other": "{{count}} de mesaje necitite",
+    "priority_you_have": "Ai",
+    "priority_needing_attention": "care necesită atenție.",
+    "priority_and": "și",
+    "review_pending": "Vezi în așteptare",
+    "events_on": "Evenimente pe {{date}}",
+    "events": "Evenimente",
+    "no_events_for_date": "Niciun eveniment programat pentru această dată.",
+    "booking_details": "Detalii rezervare"
   },
   "features": {
     "air_conditioning": "Aer condiționat",
@@ -375,5 +418,55 @@
       "classroom": "Pentru sesiuni de training cu rânduri de birouri și scaune.",
       "default": "Aranjament flexibil al locurilor."
     }
-  }
+  },
+  "settings": {
+    "title": "Setări",
+    "overview": "Prezentare generală",
+    "profile": "Profil",
+    "messages": "Mesaje",
+    "security": "Securitate",
+    "bookings": "Rezervări",
+    "favorites": "Favorite",
+    "preferences": "Preferințe",
+    "feedback": "Feedback",
+    "feedback_description": "Ne-ar plăcea să aflăm părerea și sugestiile tale sau să ne semnalezi orice problemă întâmpinată.",
+    "feedback_subject": "Subiect",
+    "feedback_subject_placeholder": "Despre ce este feedback-ul tău?",
+    "feedback_message": "Mesaj",
+    "feedback_message_placeholder": "Împărtășește-ne feedback-ul, sugestiile sau semnalează orice problemă...",
+    "feedback_submit": "Trimite feedback",
+    "feedback_success": "Mulțumim pentru feedback! Îl vom analiza în curând.",
+    "feedback_error": "Trimiterea feedback-ului a eșuat. Te rugăm să încerci din nou."
+  },
+  "security": {
+    "change_password": "Schimbă parola",
+    "current_password": "Parola curentă",
+    "new_password": "Parola nouă",
+    "confirm_password": "Confirmă parola nouă",
+    "update_password": "Actualizează parola",
+    "fill_all_fields": "Te rugăm să completezi toate câmpurile pentru parolă",
+    "validation_errors": "Te rugăm să corectezi erorile de mai jos înainte de a trimite.",
+    "password_change_info": "Dacă îți schimbi parola, vei fi deconectat automat și va trebui să te autentifici din nou cu noua parolă.",
+    "password_update_success": "Parola a fost actualizată cu succes. Vei fi deconectat în câteva secunde...",
+    "password_update_error": "Actualizarea parolei a eșuat",
+    "account_management": "Gestionare cont",
+    "delete_account": "Șterge contul",
+    "delete_account_description": "Șterge definitiv contul și toate datele asociate. Această acțiune nu poate fi anulată.",
+    "delete_account_confirm_title": "Șterge contul",
+    "delete_account_confirm_text": "Ești sigur că vrei să ștergi contul? Contul va fi șters în 30 de zile. Această acțiune nu poate fi anulată, iar toate datele tale vor fi eliminate definitiv.",
+    "delete_account_success": "Contul a fost șters cu succes. Vei fi deconectat în câteva secunde...",
+    "delete_account_error": "Ștergerea contului a eșuat. Te rugăm să încerci din nou."
+  },
+  "Notifications": "Notificări",
+  "No notifications": "Nu ai notificări",
+  "View all": "Vezi toate",
+  "My organization": "Organizația mea",
+  "Profile": "Profil",
+  "Account settings": "Setări cont",
+  "Subscription": "Abonament",
+  "Security": "Securitate",
+  "Feedback": "Feedback",
+  "Ajutor": "Ajutor",
+  "Log out": "Deconectare",
+  "Create Booking": "Creează rezervare"
 }

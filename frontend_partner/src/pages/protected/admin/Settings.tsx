@@ -55,7 +55,7 @@ const Settings = () => {
         <div className="flex gap-3 sm:gap-4 lg:gap-5 border-b border-gray-200 dark:border-gray-800 pb-1.5 min-w-max sm:min-w-0">
           {[
             { key: "organization", label: t("admin_settings.organization"), icon: <Building2 size={16} /> },
-            { key: "billing", label: 'Subscription', icon: <CreditCard size={16} /> },
+            { key: "billing", label: t("admin_settings.subscription"), icon: <CreditCard size={16} /> },
             { key: "notifications", label: t("admin_settings.notifications"), icon: <Bell size={16} /> },
             { key: "security", label: t("settings.security"), icon: <ShieldCheck size={16} /> },
             { key: "feedback", label: t("settings.feedback"), icon: <MessageSquare size={16} /> },

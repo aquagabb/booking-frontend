@@ -14,6 +14,19 @@ export function toSelectOptions<T extends { id: number | string; name: string }>
   }));
 }
 
+/** Traduce un nume venit brut din backend (categorii, facilități, reguli, tipuri de
+ * așezare — adesea în engleză) folosind un namespace din i18n, cu fallback la valoarea
+ * originală dacă slug-ul nu există în dicționar. Ex: translateReferenceLabel(t,
+ * 'event_categories', 'birthday') → 'Zi de naștere' (sau 'birthday' dacă lipsește cheia). */
+export function translateReferenceLabel(
+  t: (key: string, options?: { defaultValue: string }) => string,
+  namespace: string,
+  raw: string
+): string {
+  const slug = raw.trim().toLowerCase().replace(/\s+/g, "_");
+  return t(`${namespace}.${slug}`, { defaultValue: raw });
+}
+
 export function toLocationSelectOptions(
   data: Array<{ id: number | string; label: string; [key: string]: any }> = []
 ) {
@@ -190,3 +203,24 @@ export function withFallback(value?: string | number | null): string | number {
 
 
 
+
+/** URL-ul paginii publice a unei locații din aplicația client (VITE_CLIENT_APP_URL). */
+export function getLocationPublicUrl(slug: string): string {
+  const base = import.meta.env.VITE_CLIENT_APP_URL || "http://localhost:5100";
+  return `${base.replace(/\/$/, "")}/restaurants/${slug}`;
+}
+
+/** Copiază text în clipboard; întoarce false dacă browserul nu permite. */
+export async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** URL-ul calendarului public de disponibilitate al unei locații (rută din aplicația partner). */
+export function getPublicCalendarUrl(locationId: number | string): string {
+  return `${window.location.origin}/public-calendar/${locationId}`;
+}

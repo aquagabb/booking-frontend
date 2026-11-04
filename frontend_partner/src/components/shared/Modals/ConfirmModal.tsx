@@ -16,14 +16,14 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
   text,
   onClose,
   onConfirm,
-  cancelText = "Cancel",
-  confirmText = "Confirm",
+  cancelText = "Anulează",
+  confirmText = "Confirmă",
 }) => {
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-sm shadow-lg">
+      <div className="bg-white rounded-lg p-6 w-full max-w-sm border border-[var(--color-gray)]">
         <h3 className="text-lg font-semibold mb-4">{title}</h3>
         <p className="mb-6 text-sm text-gray-600">{text}</p>
         <div className="flex justify-end gap-2">

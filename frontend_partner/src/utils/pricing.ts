@@ -1,5 +1,15 @@
 import type { PricingItem, PricingFormValues, LocationPricingData } from "../types/pricing";
 
+/** Simbolul/unitatea afișată pentru o monedă — RON se afișează ca "lei", nu "RON". */
+export function getCurrencySymbol(currency: string | null | undefined): string {
+  const c = (currency || "RON").toUpperCase();
+  if (c === "RON") return "lei";
+  if (c === "EUR") return "€";
+  if (c === "USD") return "$";
+  if (c === "GBP") return "£";
+  return c;
+}
+
 /**
  * Builds PricingItem array from form values
  */
@@ -8,7 +18,7 @@ export const buildPricingData = (data: PricingFormValues): PricingItem[] | null 
   if (data.isPoa === true && !data.pricing_mode) {
     return [
       {
-        currency: data.currency || "EUR",
+        currency: data.currency || "RON",
         defaultMode: "custom",
         isPoa: true,
       },
@@ -19,7 +29,7 @@ export const buildPricingData = (data: PricingFormValues): PricingItem[] | null 
   }
 
   const pricingItem: PricingItem = {
-    currency: data.currency || "EUR",
+    currency: data.currency || "RON",
     defaultMode: data.pricing_mode,
   };
 
@@ -60,7 +70,7 @@ export const buildPricingData = (data: PricingFormValues): PricingItem[] | null 
 export const parsePricingData = (pricing: PricingItem[] | null | undefined): PricingFormValues => {
   if (!pricing || !Array.isArray(pricing) || pricing.length === 0) {
     return {
-      currency: "EUR",
+      currency: "RON",
       pricing_mode: null,
       price_per_hour: null,
       price_per_day: null,
@@ -76,7 +86,7 @@ export const parsePricingData = (pricing: PricingItem[] | null | undefined): Pri
   const isPoaOnly = pricingItem.defaultMode === "custom" || pricingItem.isPoa === true;
 
   return {
-    currency: pricingItem.currency || "EUR",
+    currency: pricingItem.currency || "RON",
     pricing_mode:
       pricingItem.defaultMode === "per_time"
         ? "per_time"
@@ -230,8 +240,7 @@ export function formatPricingSummary(
 
      
   };
-  const currency = values.currency || "EUR";
-  const symbol = currency === "RON" ? "RON" : currency === "EUR" ? "€" : currency;
+  const symbol = getCurrencySymbol(values.currency);
 
   if (values.isPoa) {
     return labels.priceOnApplication;

@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Pencil, Trash2, Plus } from "lucide-react";
 import { getLocationById, updateLocationPricing } from "../../../../api/locations/locations";
 import { getGeneralData } from "../../../../api/others/others";
-import { toSelectOptions } from "../../../../lib/utils";
+import { toSelectOptions, translateReferenceLabel } from "../../../../lib/utils";
 import { PricingForm } from "../../../../components/shared/PricingForm";
 import { CategoryPricingModal } from "../../../../components/admin/CategoryPricingModal";
 import type {
@@ -22,9 +22,13 @@ import {
 
 type PricingProps = {
   slug?: string;
+  onSaved?: () => void;
+  /** Când e folosit într-un wizard cu footer propriu: ascunde butonul intern de salvare,
+   * dar îl păstrează în DOM (cu id stabil) ca să poată fi declanșat din exterior. */
+  embedded?: boolean;
 };
 
-const Pricing: React.FC<PricingProps> = ({ slug }) => {
+const Pricing: React.FC<PricingProps> = ({ slug, onSaved, embedded }) => {
   const { t } = useTranslation();
 
   let locationId: number | null = null;
@@ -37,7 +41,7 @@ const Pricing: React.FC<PricingProps> = ({ slug }) => {
   }
 
   const [defaultPricingValues, setDefaultPricingValues] = useState<PricingFormValues>({
-    currency: "EUR",
+    currency: "RON",
     pricing_mode: null,
     price_per_hour: null,
     price_per_day: null,
@@ -107,7 +111,10 @@ const Pricing: React.FC<PricingProps> = ({ slug }) => {
     if (environment.status !== 200) return;
 
     setOptions({
-      categories: toSelectOptions(response?.data?.categories),
+      categories: toSelectOptions(response?.data?.categories).map((o) => ({
+        ...o,
+        label: translateReferenceLabel(t, "event_categories", o.label),
+      })),
     });
   };
 
@@ -189,6 +196,7 @@ const Pricing: React.FC<PricingProps> = ({ slug }) => {
         setSavedDefaultPricing(defaultPricingValues);
         setSavedCategoryPricing(categoryPricing);
         await fetchLocation();
+        onSaved?.();
       } else {
         setFeedback({ type: "error", message: t("common.update_error") });
       }
@@ -255,19 +263,19 @@ const Pricing: React.FC<PricingProps> = ({ slug }) => {
         </div>
 
         <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-          <div className="flex items-center justify-between gap-3 mb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
             <div className="min-w-0">
               <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
                 {t("locations.category_pricing_overrides")}
               </h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                 {t("locations.category_pricing_description")}
               </p>
             </div>
             <button
               type="button"
               onClick={() => handleOpenCategoryPricingModal()}
-              className="btn-outline text-white flex items-center gap-2"
+              className="btn-outline flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium flex-shrink-0"
             >
               <Plus className="w-4 h-4" />
               {t("locations.add_category_pricing")}
@@ -279,19 +287,21 @@ const Pricing: React.FC<PricingProps> = ({ slug }) => {
               categories.includes(Number(categoryId))
             );
             return validCategoryPricing.length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {validCategoryPricing.map(([categoryId, pricing]) => {
                   const category = options.categories.find(
                     (cat) => Number(cat.value) === Number(categoryId)
                   );
-                  const pricingValues = parsePricingData(pricing);
+                  // Categoria folosește mereu moneda de la default (nu are selector propriu) —
+                  // afișăm moneda curentă, nu una eventual învechită salvată pe categorie.
+                  const pricingValues = { ...parsePricingData(pricing), currency: defaultPricingValues.currency };
 
                   return (
                     <div
                       key={categoryId}
-                      className="group flex items-center gap-4 py-3 px-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50/80 dark:hover:bg-gray-800/80 transition-all duration-200 shadow-sm hover:shadow"
+                      className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 py-4 px-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
                     >
-                      <div className="min-w-0 flex-1">
+                      <div className="min-w-0 flex-1 space-y-1.5">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
                             {category?.label || t("locations.category_label_fallback", { id: categoryId })}
@@ -307,11 +317,11 @@ const Pricing: React.FC<PricingProps> = ({ slug }) => {
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
                           {formatPricingSummary(pricingValues, { t })}
                         </p>
                       </div>
-                      <div className="flex items-center gap-1.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 focus-within:opacity-100">
+                      <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
                         <button
                           type="button"
                           onClick={() => handleOpenCategoryPricingModal(Number(categoryId))}
@@ -326,7 +336,7 @@ const Pricing: React.FC<PricingProps> = ({ slug }) => {
                           onClick={() => handleDeleteCategoryPricing(Number(categoryId))}
                           title={t("common.delete")}
                           aria-label={t("common.delete")}
-                          className="p-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                          className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-200 transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -336,9 +346,11 @@ const Pricing: React.FC<PricingProps> = ({ slug }) => {
                 })}
               </div>
             ) : (
-              <p className="text-xs text-gray-500 dark:text-gray-400 italic py-2">
-                {t("locations.no_category_pricing")}
-              </p>
+              <div className="rounded-xl border border-dashed border-[var(--color-gray)] px-4 py-6 text-center">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {t("locations.no_category_pricing")}
+                </p>
+              </div>
             );
           })()}
         </div>
@@ -353,13 +365,13 @@ const Pricing: React.FC<PricingProps> = ({ slug }) => {
         categoryOptions={options.categories}
         selectedLocationCategories={categories}
         categoryIdsWithOverride={Object.keys(categoryPricing).map(Number)}
-        defaultCurrency={defaultPricingValues.currency || "EUR"}
+        defaultCurrency={defaultPricingValues.currency || "RON"}
         initialCategoryId={editingCategoryId}
         initialPricing={editingCategoryId ? categoryPricing[editingCategoryId] : null}
         onSave={handleCategoryPricingSave}
       />
 
-      <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-3 bg-white dark:bg-gray-900">
+      <div className={`border-t border-gray-200 dark:border-gray-700 px-4 py-3 bg-white dark:bg-gray-900 ${embedded ? "hidden" : ""}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {feedback && (
@@ -376,6 +388,7 @@ const Pricing: React.FC<PricingProps> = ({ slug }) => {
           </div>
           <div>
             <button
+              id="pricing-save-submit"
               type="button"
               onClick={handleSave}
               disabled={isSubmitting}

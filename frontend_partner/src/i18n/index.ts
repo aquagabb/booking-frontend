@@ -9,7 +9,8 @@ i18n
   .use(LanguageDetector) 
   .use(initReactI18next)
   .init({
-    fallbackLng: 'en',
+    lng: 'ro',
+    fallbackLng: 'ro',
     debug: import.meta.env.DEV,
     interpolation: {
       escapeValue: false,

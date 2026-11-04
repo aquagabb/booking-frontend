@@ -1,5 +1,6 @@
 
 import Login from '../pages/Login';
+import { GuestRoute } from './GuestRoute';
 import PublicCalendar from '../pages/PublicCalendar';
 
 import type { ReactElement } from 'react';
@@ -20,6 +21,7 @@ import PendingBookings from '../pages/protected/admin/PendingBookings';
 import Calendar from '../pages/protected/admin/Calendar';
 import NotificationsAdmin from '../pages/NotificationsAdmin';
 import LocationsPage from '../pages/protected/admin/LocationsPages';
+import LocationOnboardingWizard from '../pages/protected/admin/Locations/Onboarding';
 
 export type AppRoute = {
   path: string;
@@ -27,13 +29,14 @@ export type AppRoute = {
 };
 
 export const publicRoutes: AppRoute[] = [
-  { path: '/login', element: <Login /> },
+  { path: '/login', element: <GuestRoute><Login /></GuestRoute> },
   { path: '/public-calendar/:locationId', element: <PublicCalendar /> },
 ];
 
 export const adminRoutes: AppRoute[] = [
   { path: '/dashboard/:tab?', element: <Dashboard /> },
   { path: '/properties/:tab?', element: <LocationsPage /> },
+  { path: '/properties/onboarding', element: <LocationOnboardingWizard /> },
   { path: '/messages', element: <MessagesAdmin /> },
   { path: '/properties/edit/:slug', element: <LocationPage /> },
   { path: '/pending-bookings', element: <PendingBookings /> },

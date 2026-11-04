@@ -239,18 +239,12 @@ const CheckoutEventDetails: React.FC<CheckoutEventDetailsProps> = ({
         render={({ field }) => (
           <CustomInput
             label="GUESTS"
-            type="number"
+            type="text"
+            inputMode="numeric"
             value={field.value || ''}
             onChange={(e) => {
-              const value = e.target.value
-              if (value === '') {
-                field.onChange('')
-              } else {
-                const numValue = Number(value)
-                if (!isNaN(numValue) && numValue >= 0) {
-                  field.onChange(numValue)
-                }
-              }
+              const digits = e.target.value.replace(/\D/g, '')
+              field.onChange(digits === '' ? '' : Number(digits))
             }}
             placeholder={`Max ${maxGuests} guests`}
             required

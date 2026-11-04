@@ -1,6 +1,7 @@
 import { useNavigate, useParams } from 'react-router-dom';
-import { AlertCircle, AlertTriangle, Bell, Building2, ChevronRight, LayoutDashboard } from 'lucide-react';
+import { AlertCircle, Bell, LayoutDashboard } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAdminStore } from '../../../../store/admin.store';
 import CustomModal from '../../../../components/shared/Modals/CustomModal';
 import { getBookings } from '../../../../api/bookings/bookings';
@@ -13,6 +14,7 @@ import BookingCalendar from './BookingCalendar';
 import KpiOverview from './KpiOverview';
 import { IncompleteLocations } from './AttentionNeeded';
 import Reminders from './Reminders';
+import LocationSetupDashboard from './LocationSetupDashboard';
 import type { Booking } from './types';
 
 type TabType = 'overview' | 'reminders';
@@ -20,12 +22,14 @@ const validTabs: TabType[] = ['overview', 'reminders'];
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { tab } = useParams<{ tab?: string }>();
   const activeTab: TabType = tab && validTabs.includes(tab as TabType) ? (tab as TabType) : 'overview';
-  const { metrics, fetchMetrics, isLoadingMetrics } = useAdminStore();
+  const { metrics, fetchMetrics } = useAdminStore();
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showDateEventsModal, setShowDateEventsModal] = useState(false);
   const [confirmedReservations, setConfirmedReservations] = useState<Booking[]>([]);
+  const [isLoadingConfirmed, setIsLoadingConfirmed] = useState(true);
   const [pendingPreviewBookings, setPendingPreviewBookings] = useState<Booking[]>([]);
   const [isLoadingPendingPreview, setIsLoadingPendingPreview] = useState(true);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
@@ -47,6 +51,8 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error('Error fetching confirmed bookings:', error);
+    } finally {
+      setIsLoadingConfirmed(false);
     }
   };
 
@@ -103,44 +109,26 @@ const Dashboard = () => {
     fetchPendingPreviewBookings(true);
   };
 
-  const hasPriorityOperations = pendingBookingsCount > 0 || expiringHoldsCount > 0 || unreadMessagesCount > 0;
+  // Fără rezervări în așteptare și fără evenimente viitoare → dashboard-ul de configurare a locației
+  const hasNoActiveBookings =
+    !isLoadingPendingPreview &&
+    !isLoadingConfirmed &&
+    pendingPreviewBookings.length === 0 &&
+    confirmedReservations.length === 0;
 
-  // Show warning if no locations exist
-  if (!isLoadingMetrics && metrics.totalProperties === 0) {
-    return (
-      <div className="w-full space-y-6">
-        <div className="rounded-xl border-2 p-6 flex flex-col gap-4">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <h3 className="font-semibold text-yellow-900 mb-2">
-                Locație necesară
-              </h3>
-              <p className="text-sm text-yellow-800 mb-4">
-                Pentru a primi rezervări și a folosi aplicația, trebuie să adaugi cel puțin o locație
-              </p>
-              <button
-                onClick={() => navigate('/partner/properties')}
-                className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2 text-sm"
-              >
-                <Building2 className="w-4 h-4" />
-                <span>Adaugă locație</span>
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const hasPriorityOperations =pendingBookingsCount > 0 || expiringHoldsCount > 0 || unreadMessagesCount > 0;
+
+  // Notă: cazul "nicio locație" e tratat global în AdminLayout (blochează toată aplicația
+  // și redirecționează spre wizard-ul de onboarding) — Dashboard-ul nu mai are nevoie de
+  // propriul early-return pentru asta.
 
   return (
     <div className="w-full space-y-6">
       <div className="flex gap-3 sm:gap-4 lg:gap-5 border-b border-gray-200 pb-1.5">
         {(
           [
-            { key: 'overview', label: 'Overview', icon: LayoutDashboard },
-            { key: 'reminders', label: 'Remindere', icon: Bell },
+            { key: 'overview', label: t('dashboard.tab_overview'), icon: LayoutDashboard },
+            { key: 'reminders', label: t('dashboard.tab_reminders'), icon: Bell },
           ] as const
         ).map((tabItem) => (
           <button
@@ -163,7 +151,9 @@ const Dashboard = () => {
 
       {activeTab === 'reminders' && <Reminders />}
 
-      {activeTab === 'overview' && (
+      {activeTab === 'overview' && hasNoActiveBookings && <LocationSetupDashboard />}
+
+      {activeTab === 'overview' && !hasNoActiveBookings && (
         <>
       <KpiOverview />
 
@@ -176,13 +166,13 @@ const Dashboard = () => {
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-gray-900 text-base mb-1">
-                  Priority Operations Required
+                  {t('dashboard.priority_title')}
                 </h3>
                 <p className="text-sm text-gray-700">
-                  You have <strong>{pendingBookingsCount} pending pre-bookings</strong>
-                  {expiringHoldsCount > 0 && `, ${expiringHoldsCount} expiring hold${expiringHoldsCount === 1 ? '' : 's'}`}
-                  {unreadMessagesCount > 0 && `, and ${unreadMessagesCount} unread message${unreadMessagesCount === 1 ? '' : 's'}`}
-                  {' '}needing attention.
+                  {t('dashboard.priority_you_have')} <strong>{t('dashboard.priority_pending', { count: pendingBookingsCount })}</strong>
+                  {expiringHoldsCount > 0 && `, ${t('dashboard.priority_holds', { count: expiringHoldsCount })}`}
+                  {unreadMessagesCount > 0 && `, ${t('dashboard.priority_and')} ${t('dashboard.priority_messages', { count: unreadMessagesCount })}`}
+                  {' '}{t('dashboard.priority_needing_attention')}
                 </p>
               </div>
             </div>
@@ -192,7 +182,7 @@ const Dashboard = () => {
                   onClick={() => navigate('/partner/bookings/manage')}
                   className="btn btn-outline"
                 >
-                  Review Pending
+                  {t('dashboard.review_pending')}
                 </button>
               )}
             </div>
@@ -200,23 +190,25 @@ const Dashboard = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
-        <div className="lg:col-span-7 flex flex-col gap-6">
-          <IncompleteLocations />
+      {!isLoadingPendingPreview && !isLoadingConfirmed && (
+        <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
+          <div className="lg:col-span-7 flex flex-col gap-6">
+            <IncompleteLocations />
 
-          <PendingBookings
-            bookings={pendingPreviewBookings}
-            isLoading={isLoadingPendingPreview}
-            onBookingClick={handleBookingClick}
-          />
+            <PendingBookings
+              bookings={pendingPreviewBookings}
+              isLoading={isLoadingPendingPreview}
+              onBookingClick={handleBookingClick}
+            />
 
-          <UpcomingEvents bookings={confirmedReservations} onBookingClick={handleBookingClick} />
+            <UpcomingEvents bookings={confirmedReservations} onBookingClick={handleBookingClick} />
+          </div>
+
+          <div className="lg:col-span-3">
+            <Reminders limit={3} />
+          </div>
         </div>
-
-        <div className="lg:col-span-3">
-          <Reminders limit={3} />
-        </div>
-      </div>
+      )}
         </>
       )}
 
@@ -226,12 +218,12 @@ const Dashboard = () => {
           setShowDateEventsModal(false);
           setSelectedDate(null);
         }}
-        title={selectedDate ? `Events on ${formatDate(selectedDate)}` : 'Events'}
+        title={selectedDate ? t('dashboard.events_on', { date: formatDate(selectedDate) }) : t('dashboard.events')}
       >
         {selectedDate && (
           <div className="space-y-4">
             {getEventsForDate(selectedDate).length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No events scheduled for this date.</p>
+              <p className="text-gray-500 text-center py-4">{t('dashboard.no_events_for_date')}</p>
             ) : (
               getEventsForDate(selectedDate).map((booking: Booking, index: number) => (
                 <EventCard
@@ -249,7 +241,7 @@ const Dashboard = () => {
       <CustomModal
         open={isBookingModalOpen}
         onClose={handleCloseBookingModal}
-        title={selectedBookingId ? `Booking Details` : 'Booking Details'}
+        title={t('dashboard.booking_details')}
         className="relative bg-white rounded-xl h-[90vh] w-[75vw] flex flex-col overflow-hidden"
       >
         {selectedBookingId && (
